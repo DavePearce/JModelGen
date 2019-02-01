@@ -5,7 +5,7 @@ import java.util.List;
 
 import modelgen.core.Domain;
 
-public abstract class AbstractDomain<T> implements Domain<T> {
+public abstract class AbstractDomain {
 
 	/**
 	 * An abstract domain for values composed from exactly one child. For example,
@@ -17,7 +17,7 @@ public abstract class AbstractDomain<T> implements Domain<T> {
 	 * @param <T>
 	 * @param <S>
 	 */
-	public abstract class Unary<T, S> implements Domain<T> {
+	public static abstract class Unary<T, S> implements Domain<T> {
 		protected final Domain<S> subdomain;
 
 		public Unary(Domain<S> subdomain) {
@@ -49,7 +49,7 @@ public abstract class AbstractDomain<T> implements Domain<T> {
 	 * @param <T>
 	 * @param <S>
 	 */
-	public abstract class Binary<T, L, R> implements Domain<T> {
+	public static abstract class Binary<T, L, R> implements Domain<T> {
 		private final Domain<L> left;
 		private final Domain<R> right;
 

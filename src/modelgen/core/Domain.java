@@ -105,7 +105,7 @@ public interface Domain<T> {
 	public static class Finite<T> implements Domain<T> {
 		private final T[] items;
 
-		public Finite(T[] items) {
+		public Finite(T... items) {
 			this.items = items;
 		}
 
