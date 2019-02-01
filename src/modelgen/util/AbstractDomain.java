@@ -5,12 +5,12 @@ import java.util.List;
 
 import modelgen.core.Domain;
 
-public class AbstractDomain {
+public abstract class AbstractDomain<T> implements Domain<T> {
 
 	/**
 	 * An abstract domain for values composed from exactly one child. For example,
 	 * if generating random logical expressions then the "not" operator would extend
-	 * this class.
+	 * this class. The size of this domain exactly matches that of the subdomain.
 	 *
 	 * @author David J. Pearce
 	 *
@@ -41,7 +41,8 @@ public class AbstractDomain {
 	/**
 	 * An abstract domain for values composed from exactly two children. For
 	 * example, if generating random mathematical expressions then the "add"
-	 * operator could extend this class.
+	 * operator could extend this class. The size of this domain is the product of
+	 * the two subdomains.
 	 *
 	 * @author David J. Pearce
 	 *
@@ -73,11 +74,11 @@ public class AbstractDomain {
 		public abstract T get(L left, R right);
 	}
 
-
 	/**
 	 * An abstract generator for values composed from an arbitrary number of
 	 * children. For example, if generating random logical expressions then the "or"
-	 * operator would extend this class.
+	 * operator would extend this class. The size of this domain is the size of the
+	 * subdomain taken to the power of the maximum number of elements permitted.
 	 *
 	 * @author David J. Pearce
 	 *
@@ -125,7 +126,7 @@ public class AbstractDomain {
 
 		private static long delta(long base, int power) {
 			if (power == 0) {
-				// special case as only one empty list
+				// special case as only one empty sequence
 				return 1;
 			} else {
 				long r = base;
