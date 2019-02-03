@@ -1,11 +1,16 @@
-package modelgen.util;
+package jmodelgen.util;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import modelgen.core.Domain;
+import jmodelgen.core.Domain;
 
-public abstract class AbstractDomain {
+public abstract class AbstractDomain<T> implements Domain<T> {
+
+	@Override
+	public Domain<T> slice(final long start, final long end) {
+		return new Slice<>(this,start,end);
+	}
 
 	/**
 	 * An abstract domain for values composed from exactly one child. For example,
@@ -17,7 +22,7 @@ public abstract class AbstractDomain {
 	 * @param <T>
 	 * @param <S>
 	 */
-	public static abstract class Unary<T, S> implements Domain<T> {
+	public static abstract class Unary<T, S> extends AbstractDomain<T> implements Domain<T> {
 		protected final Domain<S> subdomain;
 
 		public Unary(Domain<S> subdomain) {
@@ -49,7 +54,7 @@ public abstract class AbstractDomain {
 	 * @param <T>
 	 * @param <S>
 	 */
-	public static abstract class Binary<T, L, R> implements Domain<T> {
+	public static abstract class Binary<T, L, R> extends AbstractDomain<T> implements Domain<T> {
 		private final Domain<L> left;
 		private final Domain<R> right;
 
@@ -85,7 +90,7 @@ public abstract class AbstractDomain {
 	 * @param <T>
 	 * @param <S>
 	 */
-	public static abstract class Nary<T, S> implements Domain<T> {
+	public static abstract class Nary<T, S> extends AbstractDomain<T> implements Domain<T> {
 		private final int max;
 		private final Domain<S> generator;
 
@@ -139,5 +144,44 @@ public abstract class AbstractDomain {
 
 		public abstract T generate(List<S> items);
 	}
+
+	// =======================================================================
+	// Helper methdos / classes
+	// =======================================================================
+
+	private static class Slice<T> implements Domain<T> {
+		private final AbstractDomain<T> parent;
+		private final long start;
+		private final long end;
+
+		public Slice(AbstractDomain<T> parent, long start, long end) {
+			this.parent = parent;
+			this.start = start;
+			this.end = end;
+		}
+
+		@Override
+		public long size() {
+			return end - start;
+		}
+
+		@Override
+		public T get(long index) {
+			return parent.get(index+start);
+		}
+
+		@Override
+		public Domain<T> slice(long start, long end) {
+			long size = size();
+			// Sanity check parameters
+			if(start < 0 || start > size) {
+				throw new IllegalArgumentException("invalid start");
+			} else if(end < start || end > size) {
+				throw new IllegalArgumentException("invalid end");
+			}
+			// Create slice directly on parent
+			return new Slice<>(parent, start + this.start, end + this.end);
+		}
+	};
 
 }

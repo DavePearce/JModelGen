@@ -1,4 +1,8 @@
-package modelgen.core;
+package jmodelgen.core;
+
+import java.util.Arrays;
+
+import jmodelgen.util.AbstractDomain;
 
 /**
  * <p>
@@ -48,12 +52,22 @@ public interface Domain<T> {
 	public T get(long index);
 
 	/**
+	 * Return a subdomain of this domain which includes all elements between the
+	 * start (inclusive) and end index (exlusive).
+	 *
+	 * @param start
+	 * @param end
+	 * @return
+	 */
+	public Domain<T> slice(long start, long end);
+
+	/**
 	 * A simple domain for boolean values.
 	 *
 	 * @author David J. Pearce
 	 *
 	 */
-	public static class Bool implements Domain<Boolean> {
+	public static class Bool extends AbstractDomain<Boolean> implements Domain<Boolean> {
 
 		@Override
 		public long size() {
@@ -91,6 +105,17 @@ public interface Domain<T> {
 		public Integer get(long index) {
 			return lower + (int) index;
 		}
+
+		@Override
+		public Domain<Integer> slice(long start, long end) {
+			long size = size();
+			if(start < 0 || start > size) {
+				throw new IllegalArgumentException("invalid start");
+			} else if(end < start || end > size) {
+				throw new IllegalArgumentException("invalid end");
+			}
+			return new Domain.Int((int) start, (int) end);
+		}
 	}
 
 
@@ -118,6 +143,17 @@ public interface Domain<T> {
 		public T get(long index) {
 			return items[(int) index];
 		}
+
+
+		@Override
+		public Domain<T> slice(long start, long end) {
+			if(start < 0 || start > items.length) {
+				throw new IllegalArgumentException("invalid start");
+			} else if(end < start || end > items.length) {
+				throw new IllegalArgumentException("invalid end");
+			}
+			return new Domain.Finite<>(Arrays.copyOfRange(items, (int) start, (int) end));
+		}
 	}
 
 	/**
@@ -128,7 +164,7 @@ public interface Domain<T> {
 	 *
 	 * @param <T>
 	 */
-	public static class Union<T> implements Domain<T> {
+	public static class Union<T> extends AbstractDomain<T> implements Domain<T> {
 		private final Domain<? extends T>[] subdomains;
 
 		public Union(Domain<? extends T>... subdomains) {
