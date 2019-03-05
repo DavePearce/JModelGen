@@ -80,6 +80,51 @@ public abstract class AbstractDomain<T> implements Domain<T> {
 	}
 
 	/**
+	 * An abstract domain for values composed from exactly three children. For
+	 * example, if generating random mathematical expressions then the C-like
+	 * ternary "?" operator could extend this class. The size of this domain is the
+	 * product of the three subdomains.
+	 *
+	 * @author David J. Pearce
+	 *
+	 * @param <P>
+	 * @param <Q>
+	 * @param <R>
+	 */
+	public static abstract class Ternary<T, P, Q, R> extends AbstractDomain<T> implements Domain<T> {
+		private final Domain<P> first;
+		private final Domain<Q> second;
+		private final Domain<R> third;
+
+		public Ternary(Domain<P> first, Domain<Q> second, Domain<R> third) {
+			this.first = first;
+			this.second = second;
+			this.third = third;
+		}
+
+		@Override
+		public long size() {
+			return first.size() * second.size() * third.size();
+		}
+
+		@Override
+		public T get(long index) {
+			// NOTE: these could be precomputed and cached
+			long first_size = first.size();
+			long second_size = first.size();
+			P p = first.get(index % first_size);
+			index = index / first_size;
+			Q q = second.get(index % second_size);
+			index = index / second_size;
+			R r = third.get(index);
+			return get(p, q, r);
+		}
+
+		public abstract T get(P first, Q second, R third);
+	}
+
+
+	/**
 	 * An abstract generator for values composed from an arbitrary number of
 	 * children. For example, if generating random logical expressions then the "or"
 	 * operator would extend this class. The size of this domain is the size of the
