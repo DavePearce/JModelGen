@@ -187,7 +187,7 @@ public abstract class AbstractDomain<T> implements Domain<T> {
 			}
 		}
 
-		public abstract T generate(List<S> items);
+		public abstract T generate(java.util.List<S> items);
 	}
 
 	// =======================================================================
