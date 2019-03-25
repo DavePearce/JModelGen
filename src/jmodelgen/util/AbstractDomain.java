@@ -136,10 +136,16 @@ public abstract class AbstractDomain<T> implements Domain<T> {
 	 * @param <S>
 	 */
 	public static abstract class Nary<T, S> extends AbstractDomain<T> implements Domain<T> {
+		private final int min;
 		private final int max;
 		private final Domain<S> generator;
 
 		public Nary(int max, Domain<S> generator) {
+			this(0,max,generator);
+		}
+
+		public Nary(int min, int max, Domain<S> generator) {
+			this.min = min;
 			this.max = max;
 			this.generator = generator;
 		}
@@ -148,7 +154,7 @@ public abstract class AbstractDomain<T> implements Domain<T> {
 		public long size() {
 			long generator_size = generator.size();
 			long size = 0;
-			for (int i = 0; i <= max; ++i) {
+			for (int i = min; i <= max; ++i) {
 				long delta = delta(generator_size, i);
 				size = size + delta;
 			}
@@ -160,7 +166,7 @@ public abstract class AbstractDomain<T> implements Domain<T> {
 			ArrayList<S> items = new ArrayList<>();
 			final long generator_size = generator.size();
 			// Yes, this one is a tad complex
-			for (int i = 0; i <= max; ++i) {
+			for (int i = min; i <= max; ++i) {
 				long delta = delta(generator_size, i);
 				if (index < delta) {
 					for (int j = 0; j < i; ++j) {
@@ -228,5 +234,4 @@ public abstract class AbstractDomain<T> implements Domain<T> {
 			return new Slice<>(parent, start + this.start, end + this.end);
 		}
 	};
-
 }

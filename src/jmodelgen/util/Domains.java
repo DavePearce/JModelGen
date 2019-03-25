@@ -1,6 +1,7 @@
 package jmodelgen.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -52,22 +53,77 @@ public class Domains {
 		}
 	}
 
+
 	/**
-	 * Return a domain which generates lists with between zero and <code>n</code>
-	 * elements selected from another domain.
+	 * A simple domain for boolean values.
 	 *
 	 * @author David J. Pearce
 	 *
 	 */
-	public static <T> Domain<java.util.List<T>> List(int n, Domain<T> generator) {
-		return new AbstractDomain.Nary<java.util.List<T>, T>(n,generator) {
+	public static Domain<Boolean> Bool() {
+		return new AbstractDomain<Boolean>() {
+			@Override
+			public long size() {
+				return 2;
+			}
+
+			@Override
+			public Boolean get(long index) {
+				return index == 0;
+			}
+
+		};
+	}
+
+	/**
+	 * A domain for integers based on a range which includes all values between a
+	 * given lower bound and a given upper bound (inclusive).
+	 *
+	 * @param lower The lower bound of integers to generate
+	 * @param upper The upper bound of integers to generate
+	 * @author David J. Pearce
+	 *
+	 */
+	public static Domain<Integer> Int(final int lower, final int upper) {
+		return new Domain<Integer>() {
+			@Override
+			public long size() {
+				return upper - lower + 1;
+			}
+
+			@Override
+			public Integer get(long index) {
+				return lower + (int) index;
+			}
+
+			@Override
+			public Domain<Integer> slice(long start, long end) {
+				long size = size();
+				if(start < 0 || start > size) {
+					throw new IllegalArgumentException("invalid start");
+				} else if(end < start || end > size) {
+					throw new IllegalArgumentException("invalid end");
+				}
+				return Int((int) start, (int) end);
+			}
+		};
+	}
+
+	/**
+	 * Return a domain which generates lists whose length is between a given minimum
+	 * and maximum value.
+	 *
+	 * @author David J. Pearce
+	 *
+	 */
+	public static <T> Domain<java.util.List<T>> List(int min, int max, Domain<T> generator) {
+		return new AbstractDomain.Nary<java.util.List<T>, T>(min,max,generator) {
 			@Override
 			public java.util.List<T> generate(java.util.List<T> items) {
 				return items;
 			}
 		};
 	}
-
 
 	/**
 	 * Map every element in a given domain of lists to a corresponding domain of
@@ -109,7 +165,80 @@ public class Domains {
 	}
 
 	/**
-	 * Generators
+	 * A domain constructed from the union of one or more other domain. The size of
+	 * this domain is thus sum of the size of all included domains.
+	 *
+	 * @author David J. Pearce
+	 *
+	 * @param <T>
+	 */
+	public static <T> Domain<T> Union(final Domain<? extends T>... subdomains) {
+		return new AbstractDomain<T>() {
+			@Override
+			public long size() {
+				long sum = 0;
+				for (int i = 0; i != subdomains.length; ++i) {
+					sum = sum + subdomains[i].size();
+				}
+				return sum;
+			}
+
+			@Override
+			public T get(long index) {
+				long sum = 0;
+				for (int i = 0; i != subdomains.length; ++i) {
+					Domain<? extends T> ith = subdomains[i];
+					long size = ith.size();
+					if (index < (sum + size)) {
+						return ith.get(index - sum);
+					}
+					sum = sum + size;
+				}
+				throw new IllegalArgumentException("invalid index");
+			}
+		};
+	}
+
+
+	/**
+	 * A domain constructed from a finite set of values. The size of the domain is
+	 * thus exactly the number of elements in the set.
+	 *
+	 * @author David J. Pearce
+	 *
+	 * @param <T>
+	 */
+	public static <T> Domain<T> Finite(T... items) {
+		return new Domain<T>() {
+			@Override
+			public long size() {
+				return items.length;
+			}
+
+			@Override
+			public T get(long index) {
+				return items[(int) index];
+			}
+
+			@Override
+			public Domain<T> slice(long start, long end) {
+				if (start < 0 || start > items.length) {
+					throw new IllegalArgumentException("invalid start");
+				} else if (end < start || end > items.length) {
+					throw new IllegalArgumentException("invalid end");
+				}
+				return Finite(Arrays.copyOfRange(items, (int) start, (int) end));
+			}
+		};
+	}
+
+	/**
+	 * A domain constructed from all values in a given domain meeting a given
+	 * constraint. This necessarily involves enumerating all elements of the
+	 * original domain in order to determine how many match predicate. Having done
+	 * that, only a single array of indices is retained which ensures constant time
+	 * lookups for all matching elements.
+	 *
 	 * @param domain
 	 * @param constraint
 	 * @return
