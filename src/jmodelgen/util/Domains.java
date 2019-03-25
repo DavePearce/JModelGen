@@ -1,6 +1,7 @@
 package jmodelgen.util;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -63,6 +64,46 @@ public class Domains {
 			@Override
 			public java.util.List<T> generate(java.util.List<T> items) {
 				return items;
+			}
+		};
+	}
+
+
+	/**
+	 * Map every element in a given domain of lists to a corresponding domain of
+	 * lists where each element has a given item appended onto the end. For example,
+	 * when appending <code>1</code> to the domain of integer lists gives the
+	 * following mappings.
+	 *
+	 * <pre>
+	 *  [] => [1]
+	 *  [0] => [0,1]
+	 *  [0,1] => [0,1,1]
+	 * </pre>
+	 *
+	 * @param domain
+	 * @param item
+	 * @return
+	 */
+	public static <T> Domain<List<T>> append(Domain<List<T>> domain, T item) {
+		return new Domain<List<T>>() {
+
+			@Override
+			public long size() {
+				return domain.size();
+			}
+
+			@Override
+			public List<T> get(long index) {
+				List<T> l = domain.get(index);
+				l.add(item);
+				return l;
+			}
+
+			@Override
+			public Domain<List<T>> slice(long start, long end) {
+				// FIXME: to be implemented
+				throw new UnsupportedOperationException();
 			}
 		};
 	}
