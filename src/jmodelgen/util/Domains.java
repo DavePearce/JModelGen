@@ -4,8 +4,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
+import java.util.stream.Stream;
 
 import jmodelgen.core.Domain;
 
@@ -257,6 +262,34 @@ public class Domains {
 		for(int i=0;i!=tmp.size();++i) {
 			indices[i] = tmp.get(i);
 		}
+		// Done
+		return new AbstractDomain<T>() {
+			@Override
+			public long size() {
+				return indices.length;
+			}
+
+			@Override
+			public T get(long index) {
+				return domain.get(indices[(int) index]);
+			}
+		};
+	}
+
+	/**
+	 * An experimental domain constructed from all values in a given domain meeting
+	 * a given constraint. This necessarily involves enumerating all elements of the
+	 * original domain in order to determine how many match predicate. Having done
+	 * that, only a single array of indices is retained which ensures constant time
+	 * lookups for all matching elements. The key distinction of this domain is that
+	 * it is constructed using parallel streams.
+	 *
+	 * @param domain
+	 * @param constraint
+	 * @return
+	 */
+	public static <T> Domain<T> ParallelConstrained(Domain<T> domain, Predicate<T> constraint) {
+		long[] indices = LongStream.range(0, domain.size()).map(l -> constraint.test(domain.get(l)) ? l : -1).filter(l -> l >= 0).parallel().toArray();
 		// Done
 		return new AbstractDomain<T>() {
 			@Override
