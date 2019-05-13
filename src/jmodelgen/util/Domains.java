@@ -204,6 +204,51 @@ public class Domains {
 		};
 	}
 
+	/**
+	 * A domain construct from the cartesian product of a given set of fields. The
+	 * size of the domain is the product of all fields.
+	 *
+	 * @param fields
+	 * @return
+	 */
+	public static <T> Domain<T[]> Product(final Domain<? extends T>[] fields, T... dummy) {
+		final long size = size(fields);
+		return new Domain<T[]>() {
+
+			@Override
+			public long size() {
+				return size;
+			}
+
+			@Override
+			public T[] get(long index) {
+				T[] result = Arrays.copyOf(dummy, fields.length);
+				//
+				for(int i=0;i!=result.length;++i) {
+					Domain<? extends T> field = fields[i];
+					long size = field.size();
+					result[i] = field.get(index % size);
+					index = index / size;
+				}
+				//
+				return result;
+			}
+
+			@Override
+			public Domain<T[]> slice(long start, long end) {
+				// TODO Auto-generated method stub
+				return null;
+			}
+		};
+	}
+
+	private static <T> long size(Domain<T>[] fields) {
+		long size = 1;
+		for(int i=0;i!=fields.length;++i) {
+			size = size * fields[i].size();
+		}
+		return size;
+	}
 
 	/**
 	 * A domain constructed from a finite set of values. The size of the domain is
@@ -302,5 +347,12 @@ public class Domains {
 				return domain.get(indices[(int) index]);
 			}
 		};
+	}
+
+	public static void main(String[] args) {
+		Domain<Object[]> d = Product(new Domain[] { Domains.Int(0, 2), Domains.Bool(), Domains.Int(0, 1) });
+		for (int i = 0; i != d.size(); ++i) {
+			System.out.println("GOT: " + Arrays.toString(d.get(i)));
+		}
 	}
 }
