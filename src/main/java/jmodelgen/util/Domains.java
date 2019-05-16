@@ -19,6 +19,28 @@ public class Domains {
 	private static final Random random = new Random(System.currentTimeMillis());
 
 	/**
+	 * A simple constant representing the empty domain.
+	 */
+	public static final Domain EMPTY = new Domain() {
+
+		@Override
+		public long size() {
+			return 0;
+		}
+
+		@Override
+		public Object get(long index) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public Domain slice(long start, long end) {
+			throw new UnsupportedOperationException();
+		}
+		
+	};
+	
+	/**
 	 * Apply a given lambda consumer to exactly <code>n</code> elements of a domain
 	 * chosen uniformly at random according to Knuth's algorithm S.
 	 *
