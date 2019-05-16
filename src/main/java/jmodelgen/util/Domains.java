@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -208,7 +209,9 @@ public class Domains {
 	 * A domain construct from the cartesian product of a given set of fields. The
 	 * size of the domain is the product of all fields.
 	 *
-	 * @param fields
+	 * @param fields The subdomains for each field of the product.
+	 * @param dummy  This can be left empty (it is used to aid creating generated
+	 *               areas).
 	 * @return
 	 */
 	public static <T> Domain<T[]> Product(final Domain<? extends T>[] fields, T... dummy) {
@@ -242,7 +245,7 @@ public class Domains {
 		};
 	}
 
-	private static <T> long size(Domain<T>[] fields) {
+	private static long size(Domain<?>[] fields) {
 		long size = 1;
 		for(int i=0;i!=fields.length;++i) {
 			size = size * fields[i].size();
@@ -347,6 +350,48 @@ public class Domains {
 				return domain.get(indices[(int) index]);
 			}
 		};
+	}
+	
+	/**
+	 * Provides a simple mechanism for adapting one domain for another return type.
+	 * This requires a conversion function which can take an arbitrary element of
+	 * the source domain and convert it into an element of the target domain.
+	 * 
+	 * @param <S>
+	 * @param <T>
+	 * @param domain
+	 * @param functor
+	 * @return
+	 */	
+	public static abstract class Adaptor<S,T> implements Domain<T> {
+		protected final Domain<S> domain;
+		
+		public Adaptor(Domain<S> domain) {
+			this.domain = domain;
+		}
+		@Override
+		public long size() {
+			return domain.size();
+		}
+
+		public T get(long index) {
+			return get(domain.get(index));
+		}
+		
+		/**
+		 * Convert an arbitrary item in the source domain into its corresponding item in
+		 * the target domain.
+		 * 
+		 * @param item
+		 * @return
+		 */
+		protected abstract T get(S item);
+		
+		@Override
+		public Domain<T> slice(long start, long end) {
+			// FIXME: would be good to support this at some point.
+			throw new UnsupportedOperationException();
+		}
 	}
 
 	public static void main(String[] args) {
