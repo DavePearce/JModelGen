@@ -62,6 +62,47 @@ public class Domains {
 	}
 
 	/**
+	 * Constraint a domain which contains exactly <code>n</code> elements of a domain
+	 * chosen uniformly at random according to Knuth's algorithm S.
+	 *
+	 * @param domain
+	 * @param n
+	 * @param consumer
+	 */
+	public static <T> Domain<T> Sample(Domain<T> domain, int n) {
+		// FIXME: this is a problem which needs to be fixed!
+		final int size = (int) domain.size();
+		int[] samples = new int[Math.min(size, n)];
+		//
+		for(int i=0,j=0;i!=size;++i) {
+			int s = random.nextInt(size - i);
+			if(s < n) {
+				samples[++j] = i;
+				n = n - 1;
+			}
+		}
+		//
+		return new Domain<T>() {
+
+			@Override
+			public long size() {
+				return samples.length;
+			}
+
+			@Override
+			public T get(long index) {
+				return domain.get(samples[(int) index]);
+			}
+
+			@Override
+			public Domain<T> slice(long start, long end) {
+				throw new UnsupportedOperationException();
+			}
+
+		};
+	}
+
+	/**
 	 * Apply a given lambda consumer to all elements matching a given condition of a
 	 * domain.
 	 *
