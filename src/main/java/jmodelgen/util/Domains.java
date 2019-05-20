@@ -37,9 +37,9 @@ public class Domains {
 		public Domain slice(long start, long end) {
 			throw new UnsupportedOperationException();
 		}
-		
+
 	};
-	
+
 	/**
 	 * Apply a given lambda consumer to exactly <code>n</code> elements of a domain
 	 * chosen uniformly at random according to Knuth's algorithm S.
@@ -77,7 +77,7 @@ public class Domains {
 		for(int i=0,j=0;i!=size;++i) {
 			int s = random.nextInt(size - i);
 			if(s < n) {
-				samples[++j] = i;
+				samples[j++] = i;
 				n = n - 1;
 			}
 		}
@@ -414,21 +414,21 @@ public class Domains {
 			}
 		};
 	}
-	
+
 	/**
 	 * Provides a simple mechanism for adapting one domain for another return type.
 	 * This requires a conversion function which can take an arbitrary element of
 	 * the source domain and convert it into an element of the target domain.
-	 * 
+	 *
 	 * @param <S>
 	 * @param <T>
 	 * @param domain
 	 * @param functor
 	 * @return
-	 */	
+	 */
 	public static abstract class Adaptor<S,T> implements Domain<T> {
 		protected final Domain<S> domain;
-		
+
 		public Adaptor(Domain<S> domain) {
 			this.domain = domain;
 		}
@@ -437,19 +437,20 @@ public class Domains {
 			return domain.size();
 		}
 
+		@Override
 		public T get(long index) {
 			return get(domain.get(index));
 		}
-		
+
 		/**
 		 * Convert an arbitrary item in the source domain into its corresponding item in
 		 * the target domain.
-		 * 
+		 *
 		 * @param item
 		 * @return
 		 */
 		protected abstract T get(S item);
-		
+
 		@Override
 		public Domain<T> slice(long start, long end) {
 			// FIXME: would be good to support this at some point.
