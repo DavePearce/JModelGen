@@ -1,5 +1,5 @@
 
-** Example 1**
+**Example 1**
 
 _Generate 10 integers uniformly at random between -10000 and 10000_
 
