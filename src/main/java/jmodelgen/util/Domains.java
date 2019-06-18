@@ -61,30 +61,30 @@ public class Domains {
 	 * chosen uniformly at random according to Knuth's algorithm S.
 	 *
 	 * @param domain
-	 * @param n
-	 * @param consumer
+	 * @param m
 	 */
-	public static <T> Domain<T> Sample(Domain<T> domain, int _n) {
+	public static <T> Domain<T> Sample(Domain<T> domain, int m) {
 		// NOTE: check whether domain smaller than n since this will limit overall size
 		// of sampled domain. This is tricky because domain size is a long.
-		final long size = domain.size();
-		long n = _n;
+		final long n = domain.size();
+		long k = m;
 		// Compute the min
-		if(size <= Integer.MAX_VALUE && size < n) {
+		if(n < Integer.MAX_VALUE && n < k) {
 			// Domain size smaller than n.
-			n = (int) size;
+			k = (int) n;
 		}
 		// Guaranteed to be an integer
-		int[] samples = new int[(int) n];
+		long[] samples = new long[(int) k];
 		// Do the sampling using Algorithm S
-		for(int i=0,j=0;i!=size;++i) {
-			long s = random.nextLong(size - i);
-			if(s < n) {
+		int j = 0;
+		for (long i = 0; i != n; ++i) {
+			long s = random.nextLong(n - i);
+			if (s < k) {
 				samples[j++] = i;
-				n = n - 1;
+				k = k - 1;
 			}
 		}
-		//
+		// Done
 		return new Domain<T>() {
 
 			@Override
@@ -102,8 +102,103 @@ public class Domains {
 				throw new UnsupportedOperationException();
 			}
 
+			@Override
+			public String toString() {
+				String r="";
+				for(int i=0;i<samples.length;++i) {
+					if (i != 0) {
+						r += ",";
+					}
+					r +=domain.get(samples[i]);
+				}
+				return "{" + r + "}";
+			}
 		};
 	}
+
+//  NOTE: following based on wikipedia page.  It's not working very well at all for reasons unknown.
+//
+//	/**
+//	 * Constraint a domain which contains exactly <code>n</code> elements of a
+//	 * domain chosen (approximately) uniformly at random. The algorithm used is the
+//	 * "Fast Approximate Reservoir Sampling" algorithm due to Erlandson.
+//	 *
+//	 * @param domain
+//	 * @param m
+//	 */
+//	public static <T> Domain<T> FastApproximateSample(Domain<T> domain, int m) {
+//		// NOTE: check whether domain smaller than n since this will limit overall size
+//		// of sampled domain. This is tricky because domain size is a long.
+//		final long n = domain.size();
+//		long k = m;
+//		// Compute the min
+//		if(n <= Integer.MAX_VALUE && n < k) {
+//			// Domain size smaller than n.
+//			k = (int) n;
+//		}
+//		// Guaranteed to be an integer
+//		long[] samples = new long[(int) k];
+//		// fill reservoir initially
+//		for(long i=0;i!=k;++i) {
+//			samples[(int) i] = i;
+//		}
+//		// Threshold determines when to switch into fast sampling logic.
+//		long t = (4*k);
+//		// Perform normal reservoir sampling upto threshold
+//		long i = k;
+//		while(i<n && i < t) {
+//			int s = random.nextInt((int) i);
+//			if(s < k) {
+//				samples[s] = i;
+//			}
+//			i = i + 1;
+//		}
+//		// After reaching threshold use approximate gap sampling distribution.
+//		while(i < n) {
+//			// Determine gap size
+//			double p = n / (i+1);
+//			double u = random.nextDouble();
+//			long g = (long) Math.floor(Math.log(u) / Math.log(1-p));
+//			// Advance over gap
+//			i = i + g;
+//			if(i < n) {
+//				// assign next element to reservoir
+//				int s = random.nextInt((int) k);
+//				samples[s] = i;
+//				i = i + 1;
+//			}
+//		}
+//		//
+//		return new Domain<T>() {
+//
+//			@Override
+//			public long size() {
+//				return samples.length;
+//			}
+//
+//			@Override
+//			public T get(long index) {
+//				return domain.get(samples[(int) index]);
+//			}
+//
+//			@Override
+//			public Domain<T> slice(long start, long end) {
+//				throw new UnsupportedOperationException();
+//			}
+//
+//			@Override
+//			public String toString() {
+//				String r="";
+//				for(int i=0;i<samples.length;++i) {
+//					if (i != 0) {
+//						r += ",";
+//					}
+//					r +=domain.get(samples[i]);
+//				}
+//				return "{" + r + "}";
+//			}
+//		};
+//	}
 
 	/**
 	 * Apply a given lambda consumer to all elements matching a given condition of a
@@ -160,7 +255,7 @@ public class Domains {
 		return new Domain<Integer>() {
 			@Override
 			public long size() {
-				return upper - lower + 1;
+				return ((long)upper) - lower + 1;
 			}
 
 			@Override
@@ -177,6 +272,18 @@ public class Domains {
 					throw new IllegalArgumentException("invalid end");
 				}
 				return Int((int) start, (int) end);
+			}
+
+			@Override
+			public String toString() {
+				String r ="";
+				for(int i=lower;i<=upper;++i) {
+					if(i!=lower) {
+						r +=",";
+					}
+					r += Integer.toString(i);
+				}
+				return "{"+r+"}";
 			}
 		};
 	}
@@ -462,9 +569,10 @@ public class Domains {
 	}
 
 	public static void main(String[] args) {
-		Domain<Object[]> d = Product(new Domain[] { Domains.Int(0, 2), Domains.Bool(), Domains.Int(0, 1) });
-		for (int i = 0; i != d.size(); ++i) {
-			System.out.println("GOT: " + Arrays.toString(d.get(i)));
-		}
+		long start = System.currentTimeMillis();
+		Domain<Integer> is = Domains.Int(0, 500000000);
+		Domain<Integer> s1 = Domains.Sample(is, 20);
+		long end = System.currentTimeMillis();
+		System.out.println("(" + (end-start) + "ms)" + s1);
 	}
 }
