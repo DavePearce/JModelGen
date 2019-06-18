@@ -3,20 +3,15 @@ package jmodelgen.util;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.LongStream;
-import java.util.stream.Stream;
 
 import jmodelgen.core.Domain;
 
 public class Domains {
-	private static final Random random = new Random(System.currentTimeMillis());
+	private static final ThreadLocalRandom random = ThreadLocalRandom.current();
 
 	/**
 	 * A simple constant representing the empty domain.
@@ -69,13 +64,21 @@ public class Domains {
 	 * @param n
 	 * @param consumer
 	 */
-	public static <T> Domain<T> Sample(Domain<T> domain, int n) {
-		// FIXME: this is a problem which needs to be fixed!
-		final int size = (int) domain.size();
-		int[] samples = new int[Math.min(size, n)];
-		//
+	public static <T> Domain<T> Sample(Domain<T> domain, int _n) {
+		// NOTE: check whether domain smaller than n since this will limit overall size
+		// of sampled domain. This is tricky because domain size is a long.
+		final long size = domain.size();
+		long n = _n;
+		// Compute the min
+		if(size <= Integer.MAX_VALUE && size < n) {
+			// Domain size smaller than n.
+			n = (int) size;
+		}
+		// Guaranteed to be an integer
+		int[] samples = new int[(int) n];
+		// Do the sampling using Algorithm S
 		for(int i=0,j=0;i!=size;++i) {
-			int s = random.nextInt(size - i);
+			long s = random.nextLong(size - i);
 			if(s < n) {
 				samples[j++] = i;
 				n = n - 1;
