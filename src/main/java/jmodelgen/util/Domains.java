@@ -57,11 +57,15 @@ public class Domains {
 	}
 
 	/**
-	 * Constraint a domain which contains exactly <code>n</code> elements of a domain
-	 * chosen uniformly at random according to Knuth's algorithm S.
+	 * Constraint a domain which contains exactly <code>n</code> elements of a
+	 * domain chosen uniformly at random according to Knuth's algorithm S. The key
+	 * advantage of this algorithm is that it is guaranteed to sample <code>m</code>
+	 * unique elements uniformly at random. The disadvantage, however, is that its
+	 * execution time is linear in <code>domain.size()</code>. Hence, for large
+	 * domains, this algorithm can be expensive.
 	 *
-	 * @param domain
-	 * @param m
+	 * @param domain The domain being sampled over.
+	 * @param m      The number of samples to record.
 	 */
 	public static <T> Domain<T> Sample(Domain<T> domain, int m) {
 		if(m < 0) {
@@ -119,89 +123,65 @@ public class Domains {
 		};
 	}
 
-//  NOTE: following based on wikipedia page.  It's not working very well at all for reasons unknown.
-//
-//	/**
-//	 * Constraint a domain which contains exactly <code>n</code> elements of a
-//	 * domain chosen (approximately) uniformly at random. The algorithm used is the
-//	 * "Fast Approximate Reservoir Sampling" algorithm due to Erlandson.
-//	 *
-//	 * @param domain
-//	 * @param m
-//	 */
-//	public static <T> Domain<T> FastApproximateSample(Domain<T> domain, int m) {
-//		// NOTE: check whether domain smaller than n since this will limit overall size
-//		// of sampled domain. This is tricky because domain size is a long.
-//		final long n = domain.size();
-//		long k = m;
-//		// Compute the min
-//		if(n <= Integer.MAX_VALUE && n < k) {
-//			// Domain size smaller than n.
-//			k = (int) n;
-//		}
-//		// Guaranteed to be an integer
-//		long[] samples = new long[(int) k];
-//		// fill reservoir initially
-//		for(long i=0;i!=k;++i) {
-//			samples[(int) i] = i;
-//		}
-//		// Threshold determines when to switch into fast sampling logic.
-//		long t = (4*k);
-//		// Perform normal reservoir sampling upto threshold
-//		long i = k;
-//		while(i<n && i < t) {
-//			int s = random.nextInt((int) i);
-//			if(s < k) {
-//				samples[s] = i;
-//			}
-//			i = i + 1;
-//		}
-//		// After reaching threshold use approximate gap sampling distribution.
-//		while(i < n) {
-//			// Determine gap size
-//			double p = n / (i+1);
-//			double u = random.nextDouble();
-//			long g = (long) Math.floor(Math.log(u) / Math.log(1-p));
-//			// Advance over gap
-//			i = i + g;
-//			if(i < n) {
-//				// assign next element to reservoir
-//				int s = random.nextInt((int) k);
-//				samples[s] = i;
-//				i = i + 1;
-//			}
-//		}
-//		//
-//		return new Domain<T>() {
-//
-//			@Override
-//			public long size() {
-//				return samples.length;
-//			}
-//
-//			@Override
-//			public T get(long index) {
-//				return domain.get(samples[(int) index]);
-//			}
-//
-//			@Override
-//			public Domain<T> slice(long start, long end) {
-//				throw new UnsupportedOperationException();
-//			}
-//
-//			@Override
-//			public String toString() {
-//				String r="";
-//				for(int i=0;i<samples.length;++i) {
-//					if (i != 0) {
-//						r += ",";
-//					}
-//					r +=domain.get(samples[i]);
-//				}
-//				return "{" + r + "}";
-//			}
-//		};
-//	}
+	/**
+	 * This is a fast approximate sampling algorithm. Being approximate means that
+	 * it's not guaranteed to generate unique samples. Specifically, there is a
+	 * chance duplicate samples will be recorded (though as the domain size
+	 * increases, this becomes increasingly unlikely). The advantage of this
+	 * algorithm is that it is linear in <code>m</code> rather than
+	 * <code>domain.size()</code>. For large domains, this makes it considerably
+	 * faster.
+	 *
+	 * @param <T>
+	 * @param domain The domain being sampled over.
+	 * @param m      The number of samples to record.
+	 * @return
+	 */
+	public static <T> Domain<T> FastApproximateSample(Domain<T> domain, int m) {
+		final long n = domain.size();
+		long k = m;
+		// Compute the min
+		if (n <= Integer.MAX_VALUE && n < k) {
+			// Domain size smaller than n.
+			k = (int) n;
+		}
+		// Guaranteed to be an integer
+		long[] samples = new long[(int) k];
+		//
+		for (int i = 0; i != m; ++i) {
+			samples[i] = random.nextLong(n);
+		}
+		// Done
+		return new Domain<T>() {
+
+			@Override
+			public long size() {
+				return samples.length;
+			}
+
+			@Override
+			public T get(long index) {
+				return domain.get(samples[(int) index]);
+			}
+
+			@Override
+			public Domain<T> slice(long start, long end) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public String toString() {
+				String r="";
+				for(int i=0;i<samples.length;++i) {
+					if (i != 0) {
+						r += ",";
+					}
+					r +=domain.get(samples[i]);
+				}
+				return "{" + r + "}";
+			}
+		};
+	}
 
 	/**
 	 * Apply a given lambda consumer to all elements matching a given condition of a
@@ -575,7 +555,10 @@ public class Domains {
 		long start = System.currentTimeMillis();
 		Domain<Integer> is = Domains.Int(0, 500000000);
 		Domain<Integer> s1 = Domains.Sample(is, 20);
+		long split = System.currentTimeMillis();
+		Domain<Integer> s2 = Domains.FastApproximateSample(is, 20);
 		long end = System.currentTimeMillis();
-		System.out.println("(" + (end-start) + "ms)" + s1);
+		System.out.println("(" + (split-start) + "ms)" + s1);
+		System.out.println("(" + (end-split) + "ms)" + s2);
 	}
 }
