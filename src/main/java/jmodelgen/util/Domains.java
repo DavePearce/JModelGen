@@ -64,6 +64,9 @@ public class Domains {
 	 * @param m
 	 */
 	public static <T> Domain<T> Sample(Domain<T> domain, int m) {
+		if(m < 0) {
+			throw new IllegalArgumentException("Sample size cannot be negative");
+		}
 		// NOTE: check whether domain smaller than n since this will limit overall size
 		// of sampled domain. This is tricky because domain size is a long.
 		final long n = domain.size();
