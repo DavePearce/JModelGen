@@ -1,5 +1,6 @@
 package jmodelgen.util;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -30,6 +31,17 @@ public class Domains {
 
 		@Override
 		public Domain slice(long start, long end) {
+			throw new UnsupportedOperationException();
+		}
+
+
+		@Override
+		public BigInteger bigSize() {
+			return BigInteger.ZERO;
+		}
+
+		@Override
+		public Object get(BigInteger index) {
 			throw new UnsupportedOperationException();
 		}
 
@@ -105,6 +117,16 @@ public class Domains {
 			}
 
 			@Override
+			public BigInteger bigSize() {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public T get(BigInteger index) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public Domain<T> slice(long start, long end) {
 				throw new UnsupportedOperationException();
 			}
@@ -165,6 +187,16 @@ public class Domains {
 			}
 
 			@Override
+			public BigInteger bigSize() {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public T get(BigInteger index) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public Domain<T> slice(long start, long end) {
 				throw new UnsupportedOperationException();
 			}
@@ -222,6 +254,16 @@ public class Domains {
 				return index == 0;
 			}
 
+			@Override
+			public BigInteger bigSize() {
+				return BigInteger.valueOf(2);
+			}
+
+			@Override
+			public Boolean get(BigInteger index) {
+				return get(index.longValue());
+			}
+
 		};
 	}
 
@@ -245,6 +287,18 @@ public class Domains {
 			public Integer get(long index) {
 				return lower + (int) index;
 			}
+
+			@Override
+			public BigInteger bigSize() {
+				// NOTE: this is safe whilst the range of integers remains 32bits.
+				return BigInteger.valueOf(size());
+			}
+
+			@Override
+			public Integer get(BigInteger index) {
+				return get(index.longValue());
+			}
+
 
 			@Override
 			public Domain<Integer> slice(long start, long end) {
@@ -319,6 +373,18 @@ public class Domains {
 			}
 
 			@Override
+			public BigInteger bigSize() {
+				return domain.bigSize();
+			}
+
+			@Override
+			public List<T> get(BigInteger index) {
+				List<T> l = domain.get(index);
+				l.add(item);
+				return l;
+			}
+
+			@Override
 			public Domain<List<T>> slice(long start, long end) {
 				// FIXME: to be implemented
 				throw new UnsupportedOperationException();
@@ -335,14 +401,28 @@ public class Domains {
 	 * @param <T>
 	 */
 	public static <T> Domain<T> Union(final Domain<? extends T>... subdomains) {
+		// Long size calculation
+		long _sum = 0;
+		for (int i = 0; i != subdomains.length; ++i) {
+			_sum = _sum + subdomains[i].size();
+		}
+		final long sum = _sum;
+		// BigInteger size calculation
+		BigInteger _bigsum = BigInteger.ZERO;
+		for (int i = 0; i != subdomains.length; ++i) {
+			_bigsum = _bigsum.add(subdomains[i].bigSize());
+		}
+		final BigInteger bigsum = _bigsum;
+		//
 		return new AbstractDomain<T>() {
 			@Override
 			public long size() {
-				long sum = 0;
-				for (int i = 0; i != subdomains.length; ++i) {
-					sum = sum + subdomains[i].size();
-				}
 				return sum;
+			}
+
+			@Override
+			public BigInteger bigSize() {
+				return bigsum;
 			}
 
 			@Override
@@ -357,6 +437,11 @@ public class Domains {
 					sum = sum + size;
 				}
 				throw new IllegalArgumentException("invalid index");
+			}
+
+			@Override
+			public T get(BigInteger index) {
+				throw new UnsupportedOperationException();
 			}
 		};
 	}
@@ -394,9 +479,18 @@ public class Domains {
 			}
 
 			@Override
+			public BigInteger bigSize() {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public T[] get(BigInteger index) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public Domain<T[]> slice(long start, long end) {
-				// TODO Auto-generated method stub
-				return null;
+				throw new UnsupportedOperationException();
 			}
 		};
 	}
@@ -427,6 +521,16 @@ public class Domains {
 			@Override
 			public T get(long index) {
 				return items[(int) index];
+			}
+
+			@Override
+			public BigInteger bigSize() {
+				return BigInteger.valueOf(items.length);
+			}
+
+			@Override
+			public T get(BigInteger index) {
+				return items[index.intValue()];
 			}
 
 			@Override
@@ -477,6 +581,17 @@ public class Domains {
 			public T get(long index) {
 				return domain.get(indices[(int) index]);
 			}
+
+
+			@Override
+			public BigInteger bigSize() {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public T get(BigInteger index) {
+				throw new UnsupportedOperationException();
+			}
 		};
 	}
 
@@ -504,6 +619,16 @@ public class Domains {
 			@Override
 			public T get(long index) {
 				return domain.get(indices[(int) index]);
+			}
+
+			@Override
+			public BigInteger bigSize() {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public T get(BigInteger index) {
+				throw new UnsupportedOperationException();
 			}
 		};
 	}

@@ -1,5 +1,6 @@
 package jmodelgen.core;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 
 import jmodelgen.util.AbstractDomain;
@@ -50,6 +51,21 @@ public interface Domain<T> {
 	 * @return
 	 */
 	public T get(long index);
+
+	/**
+	 * Determine how many objects this generator can produce
+	 *
+	 * @return
+	 */
+	public BigInteger bigSize();
+
+	/**
+	 * Get a given value from the domain determined by its index.
+	 *
+	 * @param kind
+	 * @return
+	 */
+	public T get(BigInteger index);
 
 	/**
 	 * Return a subdomain of this domain which includes all elements between the
