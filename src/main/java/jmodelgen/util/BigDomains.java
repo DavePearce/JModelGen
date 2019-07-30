@@ -4,8 +4,11 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import jmodelgen.core.BigDomain;
+import jmodelgen.core.Domain;
 
 public class BigDomains {
 	private static final ThreadLocalRandom random = ThreadLocalRandom.current();
@@ -190,6 +193,28 @@ public class BigDomains {
 					sum = _sum;
 				}
 				throw new IllegalArgumentException("invalid index");
+			}
+		};
+	}
+
+
+	public static <T, L, R> BigDomain<T> Product(final BigDomain<L> left, BigDomain<R> right, BiFunction<L, R, T> mapping) {
+		return new AbstractBigDomain.Binary<T, L, R>(left, right) {
+
+			@Override
+			public T get(L left, R right) {
+				return mapping.apply(left, right);
+			}
+
+		};
+	}
+
+	public static <T, S> BigDomain<T> Product(int min, int max, final BigDomain<S> domain,
+			Function<List<S>, T> mapping) {
+		return new AbstractBigDomain.Nary<T, S>(min, max, domain) {
+			@Override
+			public T generate(List<S> items) {
+				return mapping.apply(items);
 			}
 		};
 	}

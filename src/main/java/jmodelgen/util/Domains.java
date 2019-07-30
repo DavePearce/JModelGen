@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.LongStream;
@@ -382,6 +383,17 @@ public class Domains {
 				}
 				throw new IllegalArgumentException("invalid index");
 			}
+		};
+	}
+
+	public static <T, L, R> Domain<T> Product(final Domain<L> left, Domain<R> right, BiFunction<L, R, T> mapping) {
+		return new AbstractDomain.Binary<T, L, R>(left, right) {
+
+			@Override
+			public T get(L left, R right) {
+				return mapping.apply(left, right);
+			}
+
 		};
 	}
 

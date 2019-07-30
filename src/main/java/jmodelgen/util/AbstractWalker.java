@@ -1,6 +1,8 @@
 package jmodelgen.util;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import jmodelgen.core.Walker;
 
@@ -23,6 +25,36 @@ public abstract class AbstractWalker<T> implements Walker<T> {
 			}
 
 		};
+	}
+
+	public abstract static class Unary<T, S> extends AbstractWalker<T> {
+		private final Walker<S> walker;
+
+		public Unary(Walker<S> walker) {
+			this.walker = walker;
+		}
+
+		@Override
+		public void reset() {
+			walker.reset();
+		}
+
+		@Override
+		public boolean finished() {
+			return walker.finished();
+		}
+
+		@Override
+		public T get() {
+			return get(walker.get());
+		}
+
+		@Override
+		public void next() {
+			walker.next();
+		}
+
+		public abstract T get(S item);
 	}
 
 	public abstract static class Binary<T, L, R> extends AbstractWalker<T> {
@@ -60,5 +92,91 @@ public abstract class AbstractWalker<T> implements Walker<T> {
 		}
 
 		public abstract T get(L left, R right);
+	}
+
+	public abstract static class Nary<T, S> extends AbstractWalker<T> {
+		private final int min;
+		private final Walker<S>[] walkers;
+		private int size;
+
+		public Nary(int min, Walker<S>... walkers) {
+			this.min = min;
+			this.size = min;
+			this.walkers = walkers;
+		}
+
+		@Override
+		public void reset() {
+			this.size = min;
+			for (int i = 0; i != walkers.length; ++i) {
+				walkers[i].reset();
+			}
+		}
+
+		@Override
+		public boolean finished() {
+			return size > walkers.length;
+		}
+
+		@Override
+		public T get() {
+			ArrayList<S> items = new ArrayList<>();
+			for (int i = 0; i != size; ++i) {
+				items.add(walkers[i].get());
+			}
+			return get(items);
+		}
+
+		@Override
+		public void next() {
+			for (int i = 0; i != size; ++i) {
+				Walker<S> walker = walkers[i];
+				walker.next();
+				if (walker.finished()) {
+					walker.reset();
+				} else {
+					return;
+				}
+			}
+			size = size + 1;
+		}
+
+		abstract public T get(List<S> items);
+	}
+
+	public static class Option<T> extends AbstractWalker<T> {
+		private final Walker<T>[] walkers;
+		private int index;
+
+		public Option(Walker<T>... walkers) {
+			this.walkers = walkers;
+		}
+
+		@Override
+		public void reset() {
+			this.index = 0;
+			for(int i=0;i!=walkers.length;++i) {
+				walkers[i].reset();
+			}
+		}
+
+		@Override
+		public boolean finished() {
+			return index >= walkers.length;
+		}
+
+		@Override
+		public T get() {
+			return walkers[index].get();
+		}
+
+		@Override
+		public void next() {
+			walkers[index].next();
+			// Look for next usable walker
+			while(index < walkers.length && walkers[index].finished()) {
+				index = index + 1;
+			}
+		}
 	}
 }
