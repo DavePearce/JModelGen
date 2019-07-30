@@ -40,17 +40,6 @@ public abstract class AbstractDomain<T> implements Domain<T> {
 			return get(s);
 		}
 
-		@Override
-		public BigInteger bigSize() {
-			return subdomain.bigSize();
-		}
-
-		@Override
-		public T get(BigInteger index) {
-			S s = subdomain.get(index);
-			return get(s);
-		}
-
 		public abstract T get(S s);
 	}
 
@@ -69,13 +58,11 @@ public abstract class AbstractDomain<T> implements Domain<T> {
 		private final Domain<L> left;
 		private final Domain<R> right;
 		private final long size;
-		private final BigInteger bigSize;
 
 		public Binary(Domain<L> left, Domain<R> right) {
 			this.left = left;
 			this.right = right;
 			this.size = left.size() * right.size();
-			this.bigSize = left.bigSize().multiply(right.bigSize());
 		}
 
 		@Override
@@ -88,19 +75,6 @@ public abstract class AbstractDomain<T> implements Domain<T> {
 			long left_size = left.size();
 			L l = left.get(index % left_size);
 			R r = right.get(index / left_size);
-			return get(l, r);
-		}
-
-		@Override
-		public BigInteger bigSize() {
-			return bigSize;
-		}
-
-		@Override
-		public T get(BigInteger index) {
-			BigInteger left_size = left.bigSize();
-			L l = left.get(index.remainder(left_size));
-			R r = right.get(index.divide(left_size));
 			return get(l, r);
 		}
 
@@ -124,14 +98,12 @@ public abstract class AbstractDomain<T> implements Domain<T> {
 		private final Domain<Q> second;
 		private final Domain<R> third;
 		private final long size;
-		private final BigInteger bigSize;
 
 		public Ternary(Domain<P> first, Domain<Q> second, Domain<R> third) {
 			this.first = first;
 			this.second = second;
 			this.third = third;
 			this.size = first.size() * second.size() * third.size();
-			this.bigSize = first.bigSize().multiply(second.bigSize()).multiply(third.bigSize());
 		}
 
 		@Override
@@ -142,28 +114,11 @@ public abstract class AbstractDomain<T> implements Domain<T> {
 		@Override
 		public T get(long index) {
 			long first_size = first.size();
-			long second_size = first.size();
+			long second_size = second.size();
 			P p = first.get(index % first_size);
 			index = index / first_size;
 			Q q = second.get(index % second_size);
 			index = index / second_size;
-			R r = third.get(index);
-			return get(p, q, r);
-		}
-
-		@Override
-		public BigInteger bigSize() {
-			return bigSize;
-		}
-
-		@Override
-		public T get(BigInteger index) {
-			BigInteger first_size = first.bigSize();
-			BigInteger second_size = first.bigSize();
-			P p = first.get(index.remainder(first_size));
-			index = index.divide(first_size);
-			Q q = second.get(index.remainder(second_size));
-			index = index.divide(second_size);
 			R r = third.get(index);
 			return get(p, q, r);
 		}
@@ -188,7 +143,6 @@ public abstract class AbstractDomain<T> implements Domain<T> {
 		private final int max;
 		private final Domain<S> generator;
 		private final long size;
-		private final BigInteger bigSize;
 
 		public Nary(int max, Domain<S> generator) {
 			this(0,max,generator);
@@ -206,14 +160,6 @@ public abstract class AbstractDomain<T> implements Domain<T> {
 				acc = acc + delta;
 			}
 			this.size = acc;
-			// BigInteger size calculation
-			BigInteger generator_bigsize = generator.bigSize();
-			BigInteger bigacc = BigInteger.ZERO;
-			for (int i = min; i <= max; ++i) {
-				BigInteger delta = delta(generator_bigsize, i);
-				bigacc = bigacc.add(delta);
-			}
-			this.bigSize = bigacc;
 		}
 
 		@Override
@@ -240,16 +186,6 @@ public abstract class AbstractDomain<T> implements Domain<T> {
 			return generate(items);
 		}
 
-		@Override
-		public BigInteger bigSize() {
-			return bigSize;
-		}
-
-		@Override
-		public T get(BigInteger index) {
-			throw new UnsupportedOperationException();
-		}
-
 		private static long delta(long base, int power) {
 			if (power == 0) {
 				// special case as only one empty sequence
@@ -258,19 +194,6 @@ public abstract class AbstractDomain<T> implements Domain<T> {
 				long r = base;
 				for (int i = 1; i < power; ++i) {
 					r = r * base;
-				}
-				return r;
-			}
-		}
-
-		private static BigInteger delta(BigInteger base, int power) {
-			if (power == 0) {
-				// special case as only one empty sequence
-				return BigInteger.ONE;
-			} else {
-				BigInteger r = base;
-				for (int i = 1; i < power; ++i) {
-					r = r.multiply(base);
 				}
 				return r;
 			}
@@ -302,16 +225,6 @@ public abstract class AbstractDomain<T> implements Domain<T> {
 		@Override
 		public T get(long index) {
 			return parent.get(index+start);
-		}
-
-		@Override
-		public BigInteger bigSize() {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public T get(BigInteger index) {
-			throw new UnsupportedOperationException();
 		}
 
 		@Override

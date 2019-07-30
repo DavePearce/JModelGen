@@ -36,13 +36,13 @@ import jmodelgen.util.AbstractDomain;
  *
  * @param <T>
  */
-public interface Domain<T> {
+public interface BigDomain<T> {
 	/**
 	 * Determine how many objects this generator can produce
 	 *
 	 * @return
 	 */
-	public long size();
+	public BigInteger bigSize();
 
 	/**
 	 * Get a given value from the domain determined by its index.
@@ -50,7 +50,7 @@ public interface Domain<T> {
 	 * @param kind
 	 * @return
 	 */
-	public T get(long index);
+	public T get(BigInteger index);
 
 	/**
 	 * Return a subdomain of this domain which includes all elements between the
@@ -60,5 +60,5 @@ public interface Domain<T> {
 	 * @param end
 	 * @return
 	 */
-	public Domain<T> slice(long start, long end);
+	public BigDomain<T> slice(BigInteger start, BigInteger end);
 }
