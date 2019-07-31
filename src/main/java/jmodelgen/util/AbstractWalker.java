@@ -1,8 +1,12 @@
 package jmodelgen.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import jmodelgen.core.Walker;
 
@@ -142,6 +146,79 @@ public abstract class AbstractWalker<T> implements Walker<T> {
 		}
 
 		abstract public T get(List<S> items);
+	}
+
+	public abstract static class LazyNary<T, S> extends AbstractWalker<T> {
+		private final int min;
+		private final Walker<S>[] walkers;
+		private final State<S>[] state;
+		private int size;
+
+		@SuppressWarnings("unchecked")
+		public LazyNary(int min, int max, State<S> seed) {
+			this.min = min;
+			this.size = min;
+			this.walkers = new Walker[max];
+			this.state = new State[max + 1];
+			// Initialise minimum number of walkers
+			initialise(min,seed);
+		}
+
+		@Override
+		public void reset() {
+			this.size = min;
+			for (int i = 0; i != walkers.length; ++i) {
+				walkers[i] = null;
+				if(i > 0) {
+					state[i] = null;
+				}
+			}
+			// Initialise minimum number of walkers
+			initialise(min,state[0]);
+		}
+
+		@Override
+		public boolean finished() {
+			return size > walkers.length;
+		}
+
+		@Override
+		public T get() {
+			ArrayList<S> items = new ArrayList<>();
+			for (int i = 0; i != size; ++i) {
+				items.add(walkers[i].get());
+			}
+			return get(items);
+		}
+
+		@Override
+		public void next() {
+			for (int i = 0; i != size; ++i) {
+				Walker<S> walker = walkers[i];
+				walker.next();
+				if (walker.finished()) {
+					walker.reset();
+				} else {
+					return;
+				}
+			}
+			// lazily create walker
+			if(size < walkers.length) {
+				walkers[size] = state[size].construct();
+				state[size + 1] = state[size].transfer(walkers[size].get());
+			}
+			size = size + 1;
+		}
+
+		abstract public T get(List<S> items);
+
+		private void initialise(int min, State<S> seed) {
+			state[0] = seed;
+			for (int i = 0; i != min; ++i) {
+				walkers[i] = state[i].construct();
+				state[i+1] = state[i].transfer(walkers[i].get());
+			}
+		}
 	}
 
 	public static class Option<T> extends AbstractWalker<T> {

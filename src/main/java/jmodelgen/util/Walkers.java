@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import jmodelgen.core.BigDomain;
 import jmodelgen.core.Domain;
@@ -133,6 +134,16 @@ public class Walkers {
 
 	public static <T, S> Walker<T> Product(int min, Function<List<S>, T> mapping, Walker<S>... walkers) {
 		return new AbstractWalker.Nary<T, S>(min, walkers) {
+			@Override
+			public T get(List<S> items) {
+				return mapping.apply(items);
+			}
+		};
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T, S> Walker<T> Product(int min, int max, Walker.State<S> seed, Function<List<S>, T> mapping) {
+		return new AbstractWalker.LazyNary<T, S>(min, max, seed) {
 			@Override
 			public T get(List<S> items) {
 				return mapping.apply(items);
