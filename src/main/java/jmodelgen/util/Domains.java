@@ -473,6 +473,18 @@ public class Domains {
 				}
 				return Finite(Arrays.copyOfRange(items, (int) start, (int) end));
 			}
+
+			@Override
+			public String toString() {
+				String r = "{";
+				for(int i=0;i!=items.length;++i) {
+					if(i != 0) {
+						r += ",";
+					}
+					r += items[i];
+				}
+				return r + "}";
+			}
 		};
 	}
 

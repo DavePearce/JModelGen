@@ -9,6 +9,7 @@ import java.util.function.Function;
 
 import jmodelgen.core.BigDomain;
 import jmodelgen.core.Domain;
+import jmodelgen.core.Walker;
 
 public class BigDomains {
 	private static final ThreadLocalRandom random = ThreadLocalRandom.current();
@@ -16,7 +17,7 @@ public class BigDomains {
 	/**
 	 * A simple constant representing the empty domain.
 	 */
-	public static final BigDomain EMPTY = new BigDomain() {
+	public static final BigDomain EMPTY = new AbstractBigDomain() {
 
 		@Override
 		public BigInteger bigSize() {
@@ -25,11 +26,6 @@ public class BigDomains {
 
 		@Override
 		public Object get(BigInteger index) {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public BigDomain slice(BigInteger start, BigInteger end) {
 			throw new UnsupportedOperationException();
 		}
 	};
@@ -64,7 +60,7 @@ public class BigDomains {
 	 *
 	 */
 	public static BigDomain<Integer> Int(final int lower, final int upper) {
-		return new BigDomain<Integer>() {
+		return new AbstractBigDomain<Integer>() {
 			@Override
 			public BigInteger bigSize() {
 				return BigInteger.valueOf(((long) upper) - lower + 1);
@@ -87,7 +83,7 @@ public class BigDomains {
 				} else if (end < start || end > size) {
 					throw new IllegalArgumentException("invalid end");
 				}
-				return Int((int) start, (int) end);
+				return Int(start, end);
 			}
 
 			@Override
@@ -137,7 +133,7 @@ public class BigDomains {
 	 * @return
 	 */
 	public static <T> BigDomain<List<T>> append(BigDomain<List<T>> domain, T item) {
-		return new BigDomain<List<T>>() {
+		return new AbstractBigDomain<List<T>>() {
 
 			@Override
 			public BigInteger bigSize() {
@@ -151,11 +147,6 @@ public class BigDomains {
 				return l;
 			}
 
-			@Override
-			public BigDomain<List<T>> slice(BigInteger start, BigInteger end) {
-				// FIXME: to be implemented
-				throw new UnsupportedOperationException();
-			}
 		};
 	}
 
@@ -187,12 +178,24 @@ public class BigDomains {
 				for (int i = 0; i != subdomains.length; ++i) {
 					BigDomain<? extends T> ith = subdomains[i];
 					BigInteger _sum = sum.add(ith.bigSize());
-					if (index.compareTo(sum) < 0) {
+					if (index.compareTo(_sum) < 0) {
 						return ith.get(index.subtract(sum));
 					}
 					sum = _sum;
 				}
 				throw new IllegalArgumentException("invalid index");
+			}
+
+			@Override
+			public String toString() {
+				String r = "";
+				for(int i=0;i!=subdomains.length;++i) {
+					if(i != 0) {
+						r += "+";
+					}
+					r += subdomains[i];
+				}
+				return r;
 			}
 		};
 	}
@@ -231,7 +234,7 @@ public class BigDomains {
 	public static <T> BigDomain<T[]> Product(final BigDomain<? extends T>[] fields, T... dummy) {
 		final BigInteger size = size(fields);
 		//
-		return new BigDomain<T[]>() {
+		return new AbstractBigDomain<T[]>() {
 
 			@Override
 			public BigInteger bigSize() {
@@ -250,11 +253,6 @@ public class BigDomains {
 				}
 				//
 				return result;
-			}
-
-			@Override
-			public BigDomain<T[]> slice(BigInteger start, BigInteger end) {
-				throw new UnsupportedOperationException();
 			}
 		};
 	}
@@ -276,7 +274,7 @@ public class BigDomains {
 	 * @param <T>
 	 */
 	public static <T> BigDomain<T> Finite(T... items) {
-		return new BigDomain<T>() {
+		return new AbstractBigDomain<T>() {
 			@Override
 			public BigInteger bigSize() {
 				return BigInteger.valueOf(items.length);
@@ -302,46 +300,15 @@ public class BigDomains {
 		};
 	}
 
-	/**
-	 * Provides a simple mechanism for adapting one domain for another return type.
-	 * This requires a conversion function which can take an arbitrary element of
-	 * the source domain and convert it into an element of the target domain.
-	 *
-	 * @param <S>
-	 * @param <T>
-	 * @param domain
-	 * @param functor
-	 * @return
-	 */
-	public static abstract class Adaptor<S,T> implements BigDomain<T> {
-		protected final BigDomain<S> domain;
+	public static <T, S> BigDomain<T> Adaptor(BigDomain<S> domain, Function<S, T> mapping) {
+		return new AbstractBigDomain.Unary<T, S>(domain) {
 
-		public Adaptor(BigDomain<S> domain) {
-			this.domain = domain;
-		}
-		@Override
-		public BigInteger bigSize() {
-			return domain.bigSize();
-		}
+			@Override
+			public T get(S s) {
+				return mapping.apply(s);
+			}
 
-		@Override
-		public T get(BigInteger index) {
-			return get(domain.get(index));
-		}
-
-		/**
-		 * Convert an arbitrary item in the source domain into its corresponding item in
-		 * the target domain.
-		 *
-		 * @param item
-		 * @return
-		 */
-		protected abstract T get(S item);
-
-		@Override
-		public BigDomain<T> slice(BigInteger start, BigInteger end) {
-			// FIXME: would be good to support this at some point.
-			throw new UnsupportedOperationException();
-		}
+		};
 	}
+
 }

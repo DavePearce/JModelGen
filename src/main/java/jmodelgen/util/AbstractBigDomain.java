@@ -2,6 +2,7 @@ package jmodelgen.util;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import jmodelgen.core.BigDomain;
 import jmodelgen.core.Domain;
@@ -11,6 +12,39 @@ public abstract class AbstractBigDomain<T> implements BigDomain<T> {
 	@Override
 	public BigDomain<T> slice(final BigInteger start, final BigInteger end) {
 		return new Slice<>(this,start,end);
+	}
+
+	@Override
+	public String toString() {
+		String r = "{";
+		boolean firstTime = true;
+		for(T t : this) {
+			if(!firstTime) {
+				r += ",";
+			}
+			firstTime=false;
+			r += t.toString();
+		}
+		return r + "}";
+	}
+
+	@Override
+	public Iterator<T> iterator() {
+		return new Iterator<T>() {
+			private BigInteger index = BigInteger.ZERO;
+			@Override
+			public boolean hasNext() {
+				return index.compareTo(bigSize()) < 0;
+			}
+
+			@Override
+			public T next() {
+				T r = get(index);
+				index = index.add(BigInteger.ONE);
+				return r;
+			}
+
+		};
 	}
 
 	/**
@@ -207,7 +241,7 @@ public abstract class AbstractBigDomain<T> implements BigDomain<T> {
 	// Helper methdos / classes
 	// =======================================================================
 
-	private static class Slice<T> implements BigDomain<T> {
+	private static class Slice<T> extends AbstractBigDomain<T> {
 		private final AbstractBigDomain<T> parent;
 		private final BigInteger start;
 		private final BigInteger size;

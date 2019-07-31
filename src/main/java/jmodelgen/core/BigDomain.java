@@ -2,6 +2,7 @@ package jmodelgen.core;
 
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Iterator;
 
 import jmodelgen.util.AbstractDomain;
 
@@ -36,7 +37,7 @@ import jmodelgen.util.AbstractDomain;
  *
  * @param <T>
  */
-public interface BigDomain<T> {
+public interface BigDomain<T> extends Iterable<T> {
 	/**
 	 * Determine how many objects this generator can produce
 	 *
@@ -61,4 +62,7 @@ public interface BigDomain<T> {
 	 * @return
 	 */
 	public BigDomain<T> slice(BigInteger start, BigInteger end);
+
+	@Override
+	public Iterator<T> iterator();
 }
