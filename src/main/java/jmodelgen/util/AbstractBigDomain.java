@@ -7,12 +7,7 @@ import java.util.Iterator;
 import jmodelgen.core.BigDomain;
 import jmodelgen.core.Domain;
 
-public abstract class AbstractBigDomain<T> implements BigDomain<T> {
-
-	@Override
-	public BigDomain<T> slice(final BigInteger start, final BigInteger end) {
-		return new Slice<>(this,start,end);
-	}
+public abstract class AbstractBigDomain<T> implements Domain.Static<T> {
 
 	@Override
 	public String toString() {
