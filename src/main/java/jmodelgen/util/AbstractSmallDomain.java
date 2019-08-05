@@ -44,10 +44,10 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 	 * @param <T>
 	 * @param <S>
 	 */
-	public static abstract class Unary<T, S> extends AbstractSmallDomain<T>  {
+	public static abstract class Adaptor<T, S> extends AbstractSmallDomain<T>  {
 		protected final Domain.Small<S> subdomain;
 
-		public Unary(Domain.Small<S> subdomain) {
+		public Adaptor(Domain.Small<S> subdomain) {
 			this.subdomain = subdomain;
 		}
 
@@ -120,17 +120,12 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 		private final Domain.Small<Q> second;
 		private final Domain.Small<R> third;
 		private final int size;
-		private final int first_size;
-		private final int second_size;
 
 		public TernaryProduct(Domain.Small<P> first, Domain.Small<Q> second, Domain.Small<R> third) {
 			this.size = determineIntegerProduct(first.size(), second.size(), third.size());
 			this.first = first;
 			this.second = second;
 			this.third = third;
-			//
-			this.first_size = first.size();
-			this.second_size = second.size();
 		}
 
 		@Override
@@ -140,6 +135,9 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 
 		@Override
 		public T get(int index) {
+			int first_size = first.size();
+			int second_size = second.size();
+			//
 			P p = first.get(index % first_size);
 			index = index / first_size;
 			Q q = second.get(index % second_size);
@@ -150,7 +148,6 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 
 		public abstract T get(P first, Q second, R third);
 	}
-
 
 	/**
 	 * An abstract generator for values composed from an arbitrary number of
@@ -245,6 +242,13 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 		}
 	}
 
+	/**
+	 * A subdomain determine by a given set of "samples".
+	 *
+	 * @author David J. Pearce
+	 *
+	 * @param <T>
+	 */
 	public static class Sample<T> extends AbstractSmallDomain<T> {
 		private final Domain.Small<T> domain;
 		private final int[] samples;
@@ -359,6 +363,29 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 				}
 			}
 			return r;
+		}
+	}
+
+	/**
+	 * Determine a given integer taken to a given power. If the resulting value
+	 * won't fit into an integer, then an <code>IllegalArgumentException</code> is
+	 * thrown.
+	 *
+	 * @param sizes
+	 * @return
+	 */
+	public static boolean hasIntegerPower(int base, int power) {
+		if (power == 0) {
+			return true;
+		} else {
+			int r = base;
+			for (int i = 1; i < power; ++i) {
+				r = r * base;
+				if (r < Integer.MIN_VALUE || r > Integer.MAX_VALUE) {
+					return false;
+				}
+			}
+			return true;
 		}
 	}
 }

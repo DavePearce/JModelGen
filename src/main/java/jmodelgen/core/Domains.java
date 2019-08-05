@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.LongStream;
 
+import jmodelgen.util.AbstractBigDomain;
 import jmodelgen.util.AbstractSmallDomain;
 import jmodelgen.util.AbstractSmallDomain.BinaryProduct;
 import jmodelgen.util.AbstractSmallDomain.NaryProduct;
@@ -64,7 +65,8 @@ public class Domains {
 			int[] samples = generateSamples(small.size(), m);
 			return new AbstractSmallDomain.Sample<>(small, samples);
 		} else {
-			throw new IllegalArgumentException("implement me");
+			BigInteger[] samples = generateSamples(domain.bigSize(), m);
+			return new AbstractBigDomain.Sample<>(domain, samples);
 		}
 	}
 
@@ -91,6 +93,10 @@ public class Domains {
 		return samples;
 	}
 
+	private static BigInteger[] generateSamples(BigInteger n, int m) {
+		throw new UnsupportedOperationException("implement me");
+	}
+
 	/**
 	 * This is a fast approximate sampling algorithm. Being approximate means that
 	 * it's not guaranteed to generate unique samples. Specifically, there is a
@@ -113,7 +119,8 @@ public class Domains {
 			int[] samples = generateApproximateSamples(small.size(), m);
 			return new AbstractSmallDomain.Sample<>(small, samples);
 		} else {
-			throw new IllegalArgumentException("implement me");
+			BigInteger[] samples = generateApproximateSamples(domain.bigSize(), m);
+			return new AbstractBigDomain.Sample<>(domain, samples);
 		}
 	}
 
@@ -135,6 +142,10 @@ public class Domains {
 		}
 		// Done
 		return samples;
+	}
+
+	private static BigInteger[] generateApproximateSamples(BigInteger n, int m) {
+		throw new UnsupportedOperationException("implement me");
 	}
 
 	/**
@@ -191,31 +202,64 @@ public class Domains {
 	 * @author David J. Pearce
 	 *
 	 */
+	@SuppressWarnings("unchecked")
 	public static <T> Domain.Static<T[]> Array(int min, T[] element, Domain.Static<T> generator) {
 		final int max = element.length;
 		//
 		if (min == max) {
 			return Array(element, generator);
 		} else {
-			Domain.Static[] statics = new Domain.Static[max - min];
+			Domain.Static<T[]>[] statics = new Domain.Static[max - min];
 			for (int i = 0; i != statics.length; ++i) {
 				statics[i] = Array(Arrays.copyOf(element, i + min), generator);
 			}
-			return Union(statics);
+			return Domains.<T[]>Union(statics);
 		}
 	}
 
 	public static <T> Domain.Static<T[]> Array(T[] element, Domain.Static<T> generator) {
+		// FIXME: this is totally broken!
 		if(generator instanceof Domain.Small) {
-			return new AbstractSmallDomain.NaryProduct<T[],T>(element,(Domain.Small) generator) {
-				@Override
-				public T[] generate(T[] element) {
-					// FIXME: can we avoid this somehow?
-					return Arrays.copyOf(element,element.length);
-				}
-			};
+			Domain.Small<T> small = (Domain.Small<T>) generator;
+			if (AbstractSmallDomain.hasIntegerPower(small.size(), element.length)) {
+				return new AbstractSmallDomain.NaryProduct<T[], T>(element, small) {
+					@Override
+					public T[] generate(T[] element) {
+						// FIXME: can we avoid this somehow?
+						return Arrays.copyOf(element, element.length);
+					}
+				};
+			}
+		}
+		// default to big domain
+		return new AbstractBigDomain.NaryProduct<T[], T>(element, generator) {
+			@Override
+			public T[] generate(T[] element) {
+				// FIXME: can we avoid this somehow?
+				return Arrays.copyOf(element, element.length);
+			}
+		};
+	}
+
+	/**
+	 * A domain constructed from the union of one or more other domain. The size of
+	 * this domain is thus sum of the size of all included domains.
+	 *
+	 * @author David J. Pearce
+	 *
+	 * @param <T>
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> Domain.Static<T> Union(final Domain.Static<? extends T>... subdomains) {
+		if(subdomains.length == 1) {
+			// Easy case
+			return (Domain.Static<T>) subdomains[0];
+		}
+		Domain.Small[] smallDomains = toSmallDomains(subdomains);
+		if (smallDomains != null && AbstractSmallDomain.hasIntegerSum(smallDomains)) {
+			return new AbstractSmallDomain.NarySum<T>(smallDomains);
 		} else {
-			throw new IllegalArgumentException("implement me");
+			return new AbstractBigDomain.NarySum<T>(subdomains);
 		}
 	}
 
@@ -227,16 +271,16 @@ public class Domains {
 	 *
 	 * @param <T>
 	 */
-	public static <T> Domain.Static<T> Union(final Domain.Static<? extends T>... subdomains) {
-		if(subdomains.length == 1) {
+	@SuppressWarnings("unchecked")
+	public static <T> Domain.Static<T> Union(final Domain.Small<? extends T>... subdomains) {
+		if (subdomains.length == 1) {
 			// Easy case
-			return (Domain.Static) subdomains[0];
+			return (Domain.Static<T>) subdomains[0];
+		} else if (AbstractSmallDomain.hasIntegerSum(subdomains)) {
+			return new AbstractSmallDomain.NarySum<T>(subdomains);
+		} else {
+			return new AbstractBigDomain.NarySum<T>(subdomains);
 		}
-		Domain.Small[] smallDomains = toSmallDomains(subdomains);
-		if (smallDomains != null && AbstractSmallDomain.hasIntegerSum(smallDomains)) {
-			return new AbstractSmallDomain.NarySum<T>(smallDomains);
-		}
-		throw new IllegalArgumentException("implement me");
 	}
 
 	/**
@@ -274,7 +318,12 @@ public class Domains {
 			}
 		}
 		// Big domain required
-		throw new IllegalArgumentException("implement me");
+		return new AbstractBigDomain.BinaryProduct<T, L, R>(left, right) {
+			@Override
+			public T get(L left, R right) {
+				return mapping.apply(left, right);
+			}
+		};
 	}
 
 	/**

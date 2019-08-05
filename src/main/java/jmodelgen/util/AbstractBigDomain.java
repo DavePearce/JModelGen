@@ -4,29 +4,15 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-import jmodelgen.core.BigDomain;
 import jmodelgen.core.Domain;
 
-public abstract class AbstractBigDomain<T> implements Domain.Static<T> {
-
-	@Override
-	public String toString() {
-		String r = "{";
-		boolean firstTime = true;
-		for(T t : this) {
-			if(!firstTime) {
-				r += ",";
-			}
-			firstTime=false;
-			r += t.toString();
-		}
-		return r + "}";
-	}
+public abstract class AbstractBigDomain<T> extends AbstractDomain<T> implements Domain.Static<T> {
 
 	@Override
 	public Iterator<T> iterator() {
 		return new Iterator<T>() {
 			private BigInteger index = BigInteger.ZERO;
+
 			@Override
 			public boolean hasNext() {
 				return index.compareTo(bigSize()) < 0;
@@ -38,7 +24,6 @@ public abstract class AbstractBigDomain<T> implements Domain.Static<T> {
 				index = index.add(BigInteger.ONE);
 				return r;
 			}
-
 		};
 	}
 
@@ -52,10 +37,10 @@ public abstract class AbstractBigDomain<T> implements Domain.Static<T> {
 	 * @param <T>
 	 * @param <S>
 	 */
-	public static abstract class Unary<T, S> extends AbstractBigDomain<T> {
-		protected final BigDomain<S> subdomain;
+	public static abstract class Adaptor<T, S> extends AbstractBigDomain<T> {
+		protected final Domain.Static<S> subdomain;
 
-		public Unary(BigDomain<S> subdomain) {
+		public Adaptor(Domain.Static<S> subdomain) {
 			this.subdomain = subdomain;
 		}
 
@@ -84,12 +69,12 @@ public abstract class AbstractBigDomain<T> implements Domain.Static<T> {
 	 * @param <T>
 	 * @param <S>
 	 */
-	public static abstract class Binary<T, L, R> extends AbstractBigDomain<T> {
-		private final BigDomain<L> left;
-		private final BigDomain<R> right;
+	public static abstract class BinaryProduct<T, L, R> extends AbstractBigDomain<T> {
+		private final Domain.Static<L> left;
+		private final Domain.Static<R> right;
 		private final BigInteger bigSize;
 
-		public Binary(BigDomain<L> left, BigDomain<R> right) {
+		public BinaryProduct(Domain.Static<L> left, Domain.Static<R> right) {
 			this.left = left;
 			this.right = right;
 			this.bigSize = left.bigSize().multiply(right.bigSize());
@@ -123,13 +108,13 @@ public abstract class AbstractBigDomain<T> implements Domain.Static<T> {
 	 * @param <Q>
 	 * @param <R>
 	 */
-	public static abstract class Ternary<T, P, Q, R> extends AbstractBigDomain<T> {
-		private final BigDomain<P> first;
-		private final BigDomain<Q> second;
-		private final BigDomain<R> third;
+	public static abstract class TernaryProduct<T, P, Q, R> extends AbstractBigDomain<T> {
+		private final Domain.Static<P> first;
+		private final Domain.Static<Q> second;
+		private final Domain.Static<R> third;
 		private final BigInteger bigSize;
 
-		public Ternary(BigDomain<P> first, BigDomain<Q> second, BigDomain<R> third) {
+		public TernaryProduct(Domain.Static<P> first, Domain.Static<Q> second, Domain.Static<R> third) {
 			this.first = first;
 			this.second = second;
 			this.third = third;
@@ -156,7 +141,6 @@ public abstract class AbstractBigDomain<T> implements Domain.Static<T> {
 		public abstract T get(P first, Q second, R third);
 	}
 
-
 	/**
 	 * An abstract generator for values composed from an arbitrary number of
 	 * children. For example, if generating random logical expressions then the "or"
@@ -168,83 +152,24 @@ public abstract class AbstractBigDomain<T> implements Domain.Static<T> {
 	 * @param <T>
 	 * @param <S>
 	 */
-	public static abstract class Nary<T, S> extends AbstractBigDomain<T> {
-		private final int min;
-		private final int max;
-		private final BigDomain<S> generator;
-		private final BigInteger bigSize;
-
-		public Nary(int max, BigDomain<S> generator) {
-			this(0,max,generator);
-		}
-
-		public Nary(int min, int max, BigDomain<S> generator) {
-			this.min = min;
-			this.max = max;
-			this.generator = generator;
-			// BigInteger size calculation
-			BigInteger generator_bigsize = generator.bigSize();
-			BigInteger bigacc = BigInteger.ZERO;
-			for (int i = min; i <= max; ++i) {
-				BigInteger delta = delta(generator_bigsize, i);
-				bigacc = bigacc.add(delta);
-			}
-			this.bigSize = bigacc;
-		}
-
-		@Override
-		public BigInteger bigSize() {
-			return bigSize;
-		}
-
-		@Override
-		public T get(BigInteger index) {
-			ArrayList<S> items = new ArrayList<>();
-			final BigInteger generator_size = generator.bigSize();
-			// Yes, this one is a tad complex
-			for (int i = min; i <= max; ++i) {
-				BigInteger delta = delta(generator_size, i);
-				if (index.compareTo(delta) < 0) {
-					for (int j = 0; j < i; ++j) {
-						items.add(generator.get(index.remainder(generator_size)));
-						index = index.divide(generator_size);
-					}
-					break;
-				}
-				index = index.subtract(delta);
-			}
-			return generate(items);
-		}
-
-		private static BigInteger delta(BigInteger base, int power) {
-			if (power == 0) {
-				// special case as only one empty sequence
-				return BigInteger.ONE;
-			} else {
-				BigInteger r = base;
-				for (int i = 1; i < power; ++i) {
-					r = r.multiply(base);
-				}
-				return r;
-			}
-		}
-
-		public abstract T generate(java.util.List<S> items);
-	}
-
-	// =======================================================================
-	// Helper methdos / classes
-	// =======================================================================
-
-	private static class Slice<T> extends AbstractBigDomain<T> {
-		private final AbstractBigDomain<T> parent;
-		private final BigInteger start;
+	public static abstract class NaryProduct<T, S> extends AbstractBigDomain<T> implements Domain.Static<T> {
+		/**
+		 * Determines the length of each element in this nary product.
+		 */
+		private final S[] element;
+		/**
+		 * The generator used for each element in this nary product.
+		 */
+		private final Domain.Static<S> generator;
+		/**
+		 * The actual size of the entire domain of this product.
+		 */
 		private final BigInteger size;
 
-		public Slice(AbstractBigDomain<T> parent, BigInteger start, BigInteger end) {
-			this.parent = parent;
-			this.start = start;
-			this.size = end.subtract(start);
+		public NaryProduct(S[] element, Domain.Static<S> generator) {
+			this.size = generator.bigSize().pow(element.length);
+			this.element = element;
+			this.generator = generator;
 		}
 
 		@Override
@@ -254,21 +179,92 @@ public abstract class AbstractBigDomain<T> implements Domain.Static<T> {
 
 		@Override
 		public T get(BigInteger index) {
-			return parent.get(index.add(start));
+			final BigInteger generator_size = generator.bigSize();
+			//
+			for (int i = 0; i != element.length; ++i) {
+				element[i] = generator.get(index.remainder(generator_size));
+				index = index.divide(generator_size);
+			}
+			return generate(element);
+		}
+
+		/**
+		 * Generate an element of the target domain from the given (completed) element
+		 * array.
+		 *
+		 * @param items
+		 * @return
+		 */
+		public abstract T generate(S[] element);
+	}
+
+
+	/**
+	 * The union of one or more domains.
+	 *
+	 * @author David J. Pearce
+	 *
+	 * @param <T>
+	 */
+	public static class NarySum<T> extends AbstractBigDomain<T> {
+		private final Domain.Static<? extends T>[] elements;
+		private final BigInteger size;
+
+		public NarySum(Domain.Static<? extends T>... elements) {
+			this.elements = elements;
+			BigInteger s = BigInteger.ZERO;
+			// Compute sume
+			for(int i=0;i!=elements.length;++i) {
+				s = s.add(elements[i].bigSize());
+			}
+			this.size = s;
 		}
 
 		@Override
-		public BigDomain<T> slice(BigInteger start, BigInteger end) {
-			BigInteger size = bigSize();
-			// Sanity check parameters
-			if(start.compareTo(BigInteger.ZERO) < 0 || start.compareTo(size) > 0) {
-				throw new IllegalArgumentException("invalid start");
-			} else if(end.compareTo(start) < 0 || end.compareTo(size) > 0) {
-				throw new IllegalArgumentException("invalid end");
-			}
-			// Create slice directly on parent
-			BigInteger this_end = this.start.add(this.size);
-			return new Slice<>(parent, start.add(this.start), end.add(this_end));
+		public BigInteger bigSize() {
+			return size;
 		}
-	};
+
+		@Override
+		public T get(BigInteger index) {
+			BigInteger sum = BigInteger.ZERO;
+			for (int i = 0; i != elements.length; ++i) {
+				Domain.Static<? extends T> ith = elements[i];
+				BigInteger _sum = sum.add(ith.bigSize());
+				if (index.compareTo(_sum) < 0) {
+					return ith.get(index.subtract(sum));
+				}
+				sum = _sum;
+			}
+			throw new IllegalArgumentException("invalid index");
+		}
+	}
+
+	/**
+	 * A subdomain determine by a given set of "samples". Observe that a sampled
+	 * domain is always "small".
+	 *
+	 * @author David J. Pearce
+	 *
+	 * @param <T>
+	 */
+	public static class Sample<T> extends AbstractSmallDomain<T> {
+		private final Domain.Static<T> domain;
+		private final BigInteger[] samples;
+
+		public Sample(Domain.Static<T> domain, BigInteger[] samples) {
+			this.domain = domain;
+			this.samples = samples;
+		}
+
+		@Override
+		public int size() {
+			return samples.length;
+		}
+
+		@Override
+		public T get(int index) {
+			return domain.get(samples[index]);
+		}
+	}
 }
