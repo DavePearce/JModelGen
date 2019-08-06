@@ -160,7 +160,7 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 	 * @param <T>
 	 * @param <S>
 	 */
-	public static abstract class NaryProduct<T, S> extends AbstractSmallDomain<T> implements Domain.Static<T> {
+	public static abstract class NarySequence<T, S> extends AbstractSmallDomain<T> implements Domain.Static<T> {
 		/**
 		 * Determines the length of each element in this nary product.
 		 */
@@ -168,13 +168,13 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 		/**
 		 * The generator used for each element in this nary product.
 		 */
-		private final Domain.Small<S> generator;
+		private final Domain.Small<? extends S> generator;
 		/**
 		 * The actual size of the entire domain of this product.
 		 */
 		private final int size;
 
-		public NaryProduct(S[] element, Domain.Small<S> generator) {
+		public NarySequence(S[] element, Domain.Small<? extends S> generator) {
 			this.size = determineIntegerPower(generator.size(), element.length);
 			this.element = element;
 			this.generator = generator;
@@ -188,7 +188,6 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 		@Override
 		public T get(int index) {
 			final int generator_size = generator.size();
-			//
 			for (int i = 0; i != element.length; ++i) {
 				element[i] = generator.get(index % generator_size);
 				index = index / generator_size;

@@ -152,7 +152,7 @@ public abstract class AbstractBigDomain<T> extends AbstractDomain<T> implements 
 	 * @param <T>
 	 * @param <S>
 	 */
-	public static abstract class NaryProduct<T, S> extends AbstractBigDomain<T> implements Domain.Static<T> {
+	public static abstract class NarySequence<T, S> extends AbstractBigDomain<T> implements Domain.Static<T> {
 		/**
 		 * Determines the length of each element in this nary product.
 		 */
@@ -166,7 +166,7 @@ public abstract class AbstractBigDomain<T> extends AbstractDomain<T> implements 
 		 */
 		private final BigInteger size;
 
-		public NaryProduct(S[] element, Domain.Static<S> generator) {
+		public NarySequence(S[] element, Domain.Static<S> generator) {
 			this.size = generator.bigSize().pow(element.length);
 			this.element = element;
 			this.generator = generator;

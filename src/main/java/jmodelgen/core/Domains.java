@@ -1,20 +1,12 @@
 package jmodelgen.core;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.stream.LongStream;
 
 import jmodelgen.util.AbstractBigDomain;
 import jmodelgen.util.AbstractSmallDomain;
-import jmodelgen.util.AbstractSmallDomain.BinaryProduct;
-import jmodelgen.util.AbstractSmallDomain.NaryProduct;
 
 public class Domains {
 	private static final ThreadLocalRandom random = ThreadLocalRandom.current();
@@ -154,19 +146,17 @@ public class Domains {
 	 * @author David J. Pearce
 	 *
 	 */
-	public static Domain.Small<Boolean> Bool() {
-		return new AbstractSmallDomain<Boolean>() {
-			@Override
-			public int size() {
-				return 2;
-			}
+	public static final Domain.Small<Boolean> BOOL = new AbstractSmallDomain<Boolean>() {
+		@Override
+		public int size() {
+			return 2;
+		}
 
-			@Override
-			public Boolean get(int index) {
-				return index == 0;
-			}
-		};
-	}
+		@Override
+		public Boolean get(int index) {
+			return index == 0;
+		}
+	};
 
 	/**
 	 * A domain for integers based on a range which includes all values between a
@@ -222,7 +212,7 @@ public class Domains {
 		if(generator instanceof Domain.Small) {
 			Domain.Small<T> small = (Domain.Small<T>) generator;
 			if (AbstractSmallDomain.hasIntegerPower(small.size(), element.length)) {
-				return new AbstractSmallDomain.NaryProduct<T[], T>(element, small) {
+				return new AbstractSmallDomain.NarySequence<T[], T>(element, small) {
 					@Override
 					public T[] generate(T[] element) {
 						// FIXME: can we avoid this somehow?
@@ -232,7 +222,7 @@ public class Domains {
 			}
 		}
 		// default to big domain
-		return new AbstractBigDomain.NaryProduct<T[], T>(element, generator) {
+		return new AbstractBigDomain.NarySequence<T[], T>(element, generator) {
 			@Override
 			public T[] generate(T[] element) {
 				// FIXME: can we avoid this somehow?
