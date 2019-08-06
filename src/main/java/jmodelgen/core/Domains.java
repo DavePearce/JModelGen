@@ -3,6 +3,7 @@ package jmodelgen.core;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Function;
 import java.util.function.BiFunction;
 
 import jmodelgen.util.AbstractBigDomain;
@@ -37,6 +38,32 @@ public class Domains {
 		}
 
 	};
+
+	public static <T, S> Domain.Small<T> Adaptor(Domain.Small<S> domain, Function<S, T> functor) {
+		return new AbstractSmallDomain.Adaptor<T, S>(domain) {
+
+			@Override
+			public T get(S s) {
+				return functor.apply(s);
+			}
+
+		};
+	}
+
+	public static <T, S> Domain.Static<T> Adaptor(Domain.Static<S> domain, Function<S, T> functor) {
+		if (domain instanceof Domain.Small) {
+			return Adaptor((Domain.Small<S>) domain, functor);
+		} else {
+			return new AbstractBigDomain.Adaptor<T, S>(domain) {
+
+				@Override
+				public T get(S s) {
+					return functor.apply(s);
+				}
+
+			};
+		}
+	}
 
 	/**
 	 * Constraint a domain which contains exactly <code>n</code> elements of a
@@ -208,8 +235,7 @@ public class Domains {
 	}
 
 	public static <T> Domain.Static<T[]> Array(T[] element, Domain.Static<T> generator) {
-		// FIXME: this is totally broken!
-		if(generator instanceof Domain.Small) {
+		if (generator instanceof Domain.Small) {
 			Domain.Small<T> small = (Domain.Small<T>) generator;
 			if (AbstractSmallDomain.hasIntegerPower(small.size(), element.length)) {
 				return new AbstractSmallDomain.NarySequence<T[], T>(element, small) {
