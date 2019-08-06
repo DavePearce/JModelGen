@@ -26,7 +26,7 @@ public class BigDomainTests {
 	@Test
 	public void test_adaptor_01() {
 		// Convert words into their sizes
-		Domain.Static<Integer> word_sizes = new AbstractBigDomain.Adaptor<Integer, String>(WORDS) {
+		Domain.Big<Integer> word_sizes = new AbstractBigDomain.Adaptor<Integer, String>(WORDS) {
 
 			@Override
 			public Integer get(String s) {
@@ -47,7 +47,7 @@ public class BigDomainTests {
 	@Test
 	public void test_binaryproduct_01() {
 		// Convert words into their sizes
-		Domain.Static<String> wordints = new AbstractBigDomain.BinaryProduct<String, String, Integer>(
+		Domain.Big<String> wordints = new AbstractBigDomain.BinaryProduct<String, String, Integer>(
 				WORDS, INTS) {
 
 			@Override
@@ -72,7 +72,7 @@ public class BigDomainTests {
 	@Test
 	public void test_binaryproduct_02() {
 		// Convert words into their sizes
-		Domain.Static<String> intwords = new AbstractBigDomain.BinaryProduct<String, Integer, String>(INTS, WORDS) {
+		Domain.Big<String> intwords = new AbstractBigDomain.BinaryProduct<String, Integer, String>(INTS, WORDS) {
 
 			@Override
 			public String get(Integer i, String s) {
@@ -96,7 +96,7 @@ public class BigDomainTests {
 	@Test
 	public void test_ternaryproduct_01() {
 		// Convert words into their sizes
-		Domain.Static<String> wordintbools = new AbstractBigDomain.TernaryProduct<String, String, Integer, Boolean>(WORDS,
+		Domain.Big<String> wordintbools = new AbstractBigDomain.TernaryProduct<String, String, Integer, Boolean>(WORDS,
 				INTS, BOOL) {
 
 			@Override
@@ -123,7 +123,7 @@ public class BigDomainTests {
 	@Test
 	public void test_ternaryproduct_02() {
 		// Convert words into their sizes
-		Domain.Static<String> boolwordints = new AbstractBigDomain.TernaryProduct<String, Boolean, String, Integer>(BOOL,
+		Domain.Big<String> boolwordints = new AbstractBigDomain.TernaryProduct<String, Boolean, String, Integer>(BOOL,
 				WORDS, INTS) {
 
 			@Override
@@ -150,7 +150,7 @@ public class BigDomainTests {
 	@Test
 	public void test_naryproduct_01() {
 
-		Domain.Static<Integer> word_sizes = new AbstractBigDomain.NarySequence<Integer, String>(new String[1], WORDS) {
+		Domain.Big<Integer> word_sizes = new AbstractBigDomain.NarySequence<Integer, String>(1, WORDS) {
 
 			@Override
 			public Integer generate(String[] items) {
@@ -170,7 +170,7 @@ public class BigDomainTests {
 	@Test
 	public void test_naryproduct_02() {
 		// Convert words into their sizes
-		Domain.Static<String> intints = new AbstractBigDomain.NarySequence<String, Integer>(new Integer[2], INTS) {
+		Domain.Big<String> intints = new AbstractBigDomain.NarySequence<String, Integer>(2, INTS) {
 
 			@Override
 			public String generate(Integer[] items) {
@@ -194,7 +194,7 @@ public class BigDomainTests {
 	@Test
 	public void test_naryproduct_03() {
 		// Convert words into their sizes
-		Domain.Static<String> intintints = new AbstractBigDomain.NarySequence<String, Integer>(new Integer[3], INTS) {
+		Domain.Big<String> intintints = new AbstractBigDomain.NarySequence<String, Integer>(3, INTS) {
 
 			@Override
 			public String generate(Integer[] items) {
@@ -219,7 +219,7 @@ public class BigDomainTests {
 	@Test
 	public void test_narysum() {
 		// Convert words into their sizes
-		Domain.Static<Object> wordints = new AbstractBigDomain.NarySum<Object>(WORDS, INTS);
+		Domain.Big<Object> wordints = new AbstractBigDomain.NarySum<Object>(WORDS, INTS);
 		// Check sizes match
 		assertEquals(wordints.bigSize(), WORDS.bigSize().add(INTS.bigSize()));
 		// Check elements match as expected using iterator()

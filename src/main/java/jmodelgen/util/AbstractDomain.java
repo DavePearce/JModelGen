@@ -2,7 +2,7 @@ package jmodelgen.util;
 
 import jmodelgen.core.Domain;
 
-public abstract class AbstractDomain<T> implements Domain.Static<T> {
+public abstract class AbstractDomain<T> implements Domain.Big<T> {
 
 	@Override
 	public String toString() {

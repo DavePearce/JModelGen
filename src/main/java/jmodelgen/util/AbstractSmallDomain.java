@@ -2,11 +2,12 @@ package jmodelgen.util;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 
 import jmodelgen.core.Domain;
 
-public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implements Domain.Static<T>, Domain.Small<T> {
+public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implements Domain.Big<T>, Domain.Small<T> {
 
 	@Override
 	public BigInteger bigSize() {
@@ -52,12 +53,12 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 		}
 
 		@Override
-		public int size() {
+		public long size() {
 			return subdomain.size();
 		}
 
 		@Override
-		public T get(int index) {
+		public T get(long index) {
 			S s = subdomain.get(index);
 			return get(s);
 		}
@@ -79,22 +80,22 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 	public static abstract class BinaryProduct<T, L, R> extends AbstractSmallDomain<T> implements Domain.Small<T> {
 		private final Domain.Small<L> left;
 		private final Domain.Small<R> right;
-		private final int size;
+		private final long size;
 
 		public BinaryProduct(Domain.Small<L> left, Domain.Small<R> right) {
-			this.size = determineIntegerProduct(left.size(), right.size());
+			this.size = determineIntegerProduct(left, right);
 			this.left = left;
 			this.right = right;
 		}
 
 		@Override
-		public int size() {
+		public long size() {
 			return size;
 		}
 
 		@Override
-		public T get(int index) {
-			int left_size = left.size();
+		public T get(long index) {
+			long left_size = left.size();
 			L l = left.get(index % left_size);
 			R r = right.get(index / left_size);
 			return get(l, r);
@@ -119,24 +120,24 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 		private final Domain.Small<P> first;
 		private final Domain.Small<Q> second;
 		private final Domain.Small<R> third;
-		private final int size;
+		private final long size;
 
 		public TernaryProduct(Domain.Small<P> first, Domain.Small<Q> second, Domain.Small<R> third) {
-			this.size = determineIntegerProduct(first.size(), second.size(), third.size());
+			this.size = determineIntegerProduct(first, second, third);
 			this.first = first;
 			this.second = second;
 			this.third = third;
 		}
 
 		@Override
-		public int size() {
+		public long size() {
 			return size;
 		}
 
 		@Override
-		public T get(int index) {
-			int first_size = first.size();
-			int second_size = second.size();
+		public T get(long index) {
+			long first_size = first.size();
+			long second_size = second.size();
 			//
 			P p = first.get(index % first_size);
 			index = index / first_size;
@@ -160,7 +161,7 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 	 * @param <T>
 	 * @param <S>
 	 */
-	public static abstract class NarySequence<T, S> extends AbstractSmallDomain<T> implements Domain.Static<T> {
+	public static abstract class NarySequence<T, S> extends AbstractSmallDomain<T> implements Domain.Big<T> {
 		/**
 		 * Determines the length of each element in this nary product.
 		 */
@@ -172,22 +173,25 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 		/**
 		 * The actual size of the entire domain of this product.
 		 */
-		private final int size;
+		private final long size;
 
-		public NarySequence(S[] element, Domain.Small<? extends S> generator) {
-			this.size = determineIntegerPower(generator.size(), element.length);
-			this.element = element;
+		public NarySequence(int n, Domain.Small<? extends S> generator, S... dummy) {
+			if (dummy.length != n) {
+				dummy = Arrays.copyOf(dummy, n);
+			}
+			this.size = determineIntegerPower(generator.size(), n);
+			this.element = dummy;
 			this.generator = generator;
 		}
 
 		@Override
-		public int size() {
+		public long size() {
 			return size;
 		}
 
 		@Override
-		public T get(int index) {
-			final int generator_size = generator.size();
+		public T get(long index) {
+			final long generator_size = generator.size();
 			for (int i = 0; i != element.length; ++i) {
 				element[i] = generator.get(index % generator_size);
 				index = index / generator_size;
@@ -205,6 +209,56 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 		public abstract T generate(S[] element);
 	}
 
+	public static abstract class NaryProduct<T, S> extends AbstractSmallDomain<T> implements Domain.Big<T> {
+		/**
+		 * Determines the length of each element in this nary product.
+		 */
+		private final S[] element;
+		/**
+		 * The generator used for each element in this nary product.
+		 */
+		private final Domain.Small<? extends S>[] generators;
+		/**
+		 * The actual size of the entire domain of this product.
+		 */
+		private final long size;
+
+		public NaryProduct(Domain.Small<? extends S>[] generators, S... dummy) {
+			if(dummy.length != generators.length) {
+				dummy = Arrays.copyOf(dummy, generators.length);
+			}
+			this.size = determineIntegerProduct(generators);
+			this.element = dummy;
+			this.generators = generators;
+		}
+
+		@Override
+		public long size() {
+			return size;
+		}
+
+		@Override
+		public T get(long index) {
+			for (int i = 0; i != element.length; ++i) {
+				final Domain.Small<? extends S> generator = generators[i];
+				final long generator_size = generator.size();
+				element[i] = generator.get(index % generator_size);
+				index = index / generator_size;
+			}
+			return generate(element);
+		}
+
+		/**
+		 * Generate an element of the target domain from the given (completed) element
+		 * array.
+		 *
+		 * @param items
+		 * @return
+		 */
+		public abstract T generate(S[] element);
+	}
+
+
 	/**
 	 * The union of one or more domains.
 	 *
@@ -214,7 +268,7 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 	 */
 	public static class NarySum<T> extends AbstractSmallDomain<T> {
 		private final Domain.Small<? extends T>[] elements;
-		private final int size;
+		private final long size;
 
 		public NarySum(Domain.Small<? extends T>... elements) {
 			this.size = determineIntegerSum(elements);
@@ -222,16 +276,16 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 		}
 
 		@Override
-		public int size() {
+		public long size() {
 			return size;
 		}
 
 		@Override
-		public T get(int index) {
-			int sum = 0;
+		public T get(long index) {
+			long sum = 0;
 			for (int i = 0; i != elements.length; ++i) {
 				Domain.Small<? extends T> ith = elements[i];
-				int size = ith.size();
+				long size = ith.size();
 				if (index < (sum + size)) {
 					return ith.get(index - sum);
 				}
@@ -250,21 +304,21 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 	 */
 	public static class Sample<T> extends AbstractSmallDomain<T> {
 		private final Domain.Small<T> domain;
-		private final int[] samples;
+		private final long[] samples;
 
-		public Sample(Domain.Small<T> domain, int[] samples) {
+		public Sample(Domain.Small<T> domain, long[] samples) {
 			this.domain = domain;
 			this.samples = samples;
 		}
 
 		@Override
-		public int size() {
+		public long size() {
 			return samples.length;
 		}
 
 		@Override
-		public T get(int index) {
-			return domain.get(samples[index]);
+		public T get(long index) {
+			return domain.get(samples[(int) index]);
 		}
 	}
 
@@ -276,29 +330,36 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 	 * @param sizes
 	 * @return
 	 */
-	private static int determineIntegerProduct(int... sizes) {
-		long size = sizes[0];
-		if (size < Integer.MIN_VALUE || size > Integer.MAX_VALUE) {
-			throw new IllegalArgumentException("invalid integer product");
-		}
-		for (int i = 1; i != sizes.length; ++i) {
-			size = size * sizes[i];
-			if (size < Integer.MIN_VALUE || size > Integer.MAX_VALUE) {
-				throw new IllegalArgumentException("invalid integer product");
+	private static long determineIntegerProduct(Domain.Small... domains) {
+		if (domains.length > 0) {
+			long size = domains[0].size();
+			for (int i = 1; i != domains.length; ++i) {
+				size = size * domains[i].size();
+				if (size < 0) {
+					// NOTE: integer overflow
+					throw new IllegalArgumentException("invalid integer product");
+				}
 			}
+			return size;
+		} else {
+			return 0;
 		}
-		return (int) size;
 	}
 
-	public static int determineIntegerSum(Domain.Small... domains) {
-		long size = domains[0].size();
-		for (int i = 1; i != domains.length; ++i) {
-			size = size + domains[i].size();
-			if (size < Integer.MIN_VALUE || size > Integer.MAX_VALUE) {
-				throw new IllegalArgumentException("invalid integer product");
+	public static long determineIntegerSum(Domain.Small... domains) {
+		if (domains.length > 0) {
+			long size = domains[0].size();
+			for (int i = 1; i != domains.length; ++i) {
+				size = size + domains[i].size();
+				if (size < 0) {
+					// NOTE: integer overflow
+					throw new IllegalArgumentException("invalid integer product");
+				}
 			}
+			return (int) size;
+		} else {
+			return 0;
 		}
-		return (int) size;
 	}
 
 	/**
@@ -308,12 +369,15 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 	 * @param domains
 	 * @return
 	 */
-	public static boolean hasIntegerSum(Domain.Small... domains) {
-		long size = domains[0].size();
-		for (int i = 1; i != domains.length; ++i) {
-			size = size + domains[i].size();
-			if (size < Integer.MIN_VALUE || size > Integer.MAX_VALUE) {
-				return false;
+	public static boolean hasIntegerSum(Domain.Small<?>... domains) {
+		if(domains.length > 0) {
+			long size = domains[0].size();
+			for (int i = 1; i != domains.length; ++i) {
+				size = size + domains[i].size();
+				if (size < 0) {
+					// NOTE: integer overflow
+					return false;
+				}
 			}
 		}
 		return true;
@@ -327,14 +391,12 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 	 * @param sizes
 	 * @return
 	 */
-	public static boolean hasIntegerProduct(int... sizes) {
-		long size = sizes[0];
-		if (size < Integer.MIN_VALUE || size > Integer.MAX_VALUE) {
-			return false;
-		}
-		for (int i = 1; i != sizes.length; ++i) {
-			size = size * sizes[i];
-			if (size < Integer.MIN_VALUE || size > Integer.MAX_VALUE) {
+	public static boolean hasIntegerProduct(Domain.Small<?>... domains) {
+		long size = domains[0].size();
+		for (int i = 1; i != domains.length; ++i) {
+			size = size * domains[i].size();
+			if (size < 0) {
+				// NOTE: integer overflow
 				return false;
 			}
 		}
@@ -350,14 +412,15 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 	 * @param sizes
 	 * @return
 	 */
-	private static int determineIntegerPower(int base, int power) {
+	private static long determineIntegerPower(long base, int power) {
 		if(power == 0) {
 			return 1;
 		} else {
-			int r = base;
+			long r = base;
 			for (int i = 1; i < power; ++i) {
 				r = r * base;
-				if (r < Integer.MIN_VALUE || r > Integer.MAX_VALUE) {
+				if (r < 0) {
+					// NOTE: integer overflow
 					throw new IllegalArgumentException("invalid integer power");
 				}
 			}
@@ -373,14 +436,15 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 	 * @param sizes
 	 * @return
 	 */
-	public static boolean hasIntegerPower(int base, int power) {
+	public static boolean hasIntegerPower(long base, int power) {
 		if (power == 0) {
 			return true;
 		} else {
-			int r = base;
+			long r = base;
 			for (int i = 1; i < power; ++i) {
 				r = r * base;
-				if (r < Integer.MIN_VALUE || r > Integer.MAX_VALUE) {
+				if (r < 0) {
+					// NOTE: integer overflow
 					return false;
 				}
 			}

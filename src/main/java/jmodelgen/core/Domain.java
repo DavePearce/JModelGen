@@ -39,7 +39,7 @@ public interface Domain {
 	 *
 	 * @param <T>
 	 */
-	public static interface Static<T> extends Iterable<T> {
+	public static interface Big<T> extends Iterable<T> {
 		/**
 		 * Determine how many objects this generator can produce
 		 *
@@ -87,13 +87,13 @@ public interface Domain {
 	 * Observe there are an infinite number of values here and, to create a finite
 	 * domain, we would need to place a cap on the number of elements.
 	 */
-	public static interface Small<T> extends Static<T> {
+	public static interface Small<T> extends Big<T> {
 		/**
 		 * Determine how many objects this generator can produce
 		 *
 		 * @return
 		 */
-		public int size();
+		public long size();
 
 		/**
 		 * Get a given value from the domain determined by its index.
@@ -101,6 +101,6 @@ public interface Domain {
 		 * @param kind
 		 * @return
 		 */
-		public T get(int index);
+		public T get(long index);
 	}
 }

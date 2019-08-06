@@ -7,7 +7,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import jmodelgen.core.Domain.Static;
+import jmodelgen.core.Domain.Big;
 import jmodelgen.core.Domain;
 import jmodelgen.core.Walker;
 
@@ -53,7 +53,7 @@ public class Walkers {
 	 * @param domain
 	 * @return
 	 */
-	public static <T> Walker<T> Adaptor(Domain.Static<T> domain) {
+	public static <T> Walker<T> Adaptor(Domain.Big<T> domain) {
 		return new AbstractWalker<T>() {
 			private BigInteger index = BigInteger.ZERO;
 			@Override
@@ -89,7 +89,7 @@ public class Walkers {
 	 * @param mapping
 	 * @return
 	 */
-	public static <T, S> Walker<T> Adaptor(Domain.Static<S> domain, Function<S, T> mapping) {
+	public static <T, S> Walker<T> Adaptor(Domain.Big<S> domain, Function<S, T> mapping) {
 		return Adaptor(new AbstractBigDomain.Adaptor<T, S>(domain) {
 
 			@Override
@@ -111,7 +111,7 @@ public class Walkers {
 		};
 	}
 
-	public static <T, L, R> Walker<T> Product(Domain.Static<L> left, Domain.Static<R> right, BiFunction<L, R, T> mapping) {
+	public static <T, L, R> Walker<T> Product(Domain.Big<L> left, Domain.Big<R> right, BiFunction<L, R, T> mapping) {
 		return new AbstractWalker.Binary<T, L, R>(Adaptor(left), Adaptor(right)) {
 
 			@Override

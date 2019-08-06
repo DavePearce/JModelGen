@@ -195,7 +195,7 @@ public class SmallDomainTests {
 	@Test
 	public void test_naryproduct_01() {
 
-		Domain.Small<Integer> word_sizes = new AbstractSmallDomain.NarySequence<Integer, String>(new String[1], WORDS) {
+		Domain.Small<Integer> word_sizes = new AbstractSmallDomain.NarySequence<Integer, String>(1, WORDS) {
 
 			@Override
 			public Integer generate(String[] items) {
@@ -220,7 +220,7 @@ public class SmallDomainTests {
 	@Test
 	public void test_naryproduct_02() {
 		// Convert words into their sizes
-		Domain.Small<String> intints = new AbstractSmallDomain.NarySequence<String, Integer>(new Integer[2], INTS) {
+		Domain.Small<String> intints = new AbstractSmallDomain.NarySequence<String, Integer>(2, INTS) {
 
 			@Override
 			public String generate(Integer[] items) {
@@ -253,7 +253,7 @@ public class SmallDomainTests {
 	@Test
 	public void test_naryproduct_03() {
 		// Convert words into their sizes
-		Domain.Small<String> intintints = new AbstractSmallDomain.NarySequence<String, Integer>(new Integer[3], INTS) {
+		Domain.Small<String> intintints = new AbstractSmallDomain.NarySequence<String, Integer>(3, INTS) {
 
 			@Override
 			public String generate(Integer[] items) {

@@ -15,15 +15,16 @@ public class Domains {
 	/**
 	 * A simple constant representing the empty domain.
 	 */
-	public static final Domain.Static EMPTY = new AbstractSmallDomain() {
+	@SuppressWarnings("rawtypes")
+	public static final Domain.Small EMPTY = new AbstractSmallDomain() {
 
 		@Override
-		public int size() {
-			return 0;
+		public long size() {
+			return 0L;
 		}
 
 		@Override
-		public Object get(int index) {
+		public Object get(long index) {
 			throw new UnsupportedOperationException();
 		}
 
@@ -50,7 +51,7 @@ public class Domains {
 		};
 	}
 
-	public static <T, S> Domain.Static<T> Adaptor(Domain.Static<S> domain, Function<S, T> functor) {
+	public static <T, S> Domain.Big<T> Adaptor(Domain.Big<S> domain, Function<S, T> functor) {
 		if (domain instanceof Domain.Small) {
 			return Adaptor((Domain.Small<S>) domain, functor);
 		} else {
@@ -76,12 +77,12 @@ public class Domains {
 	 * @param domain The domain being sampled over.
 	 * @param m      The number of samples to record.
 	 */
-	public static <T> Domain.Small<T> Sample(Domain.Static<T> domain, int m) {
+	public static <T> Domain.Small<T> Sample(Domain.Big<T> domain, int m) {
 		if (m < 0) {
 			throw new IllegalArgumentException("negative sample size");
 		} else if (domain instanceof Domain.Small) {
 			Domain.Small<T> small = (Domain.Small<T>) domain;
-			int[] samples = generateSamples(small.size(), m);
+			long[] samples = generateSamples(small.size(), m);
 			return new AbstractSmallDomain.Sample<>(small, samples);
 		} else {
 			BigInteger[] samples = generateSamples(domain.bigSize(), m);
@@ -96,14 +97,14 @@ public class Domains {
 	 * @param m
 	 * @return
 	 */
-	private static int[] generateSamples(int n, int m) {
-		int k = n < m ? n : m;
+	private static long[] generateSamples(long n, int m) {
+		long k = n < m ? n : m;
 		// Guaranteed to be an integer
-		int[] samples = new int[k];
+		long[] samples = new long[(int) k];
 		// Do the sampling using Algorithm S
 		int j = 0;
 		for (int i = 0; i != n; ++i) {
-			int s = random.nextInt(n - i);
+			long s = random.nextLong(n - i);
 			if (s < k) {
 				samples[j++] = i;
 				k = k - 1;
@@ -130,12 +131,12 @@ public class Domains {
 	 * @param m      The number of samples to record.
 	 * @return
 	 */
-	public static <T> Domain.Small<T> FastApproximateSample(Domain.Static<T> domain, int m) {
+	public static <T> Domain.Small<T> FastApproximateSample(Domain.Big<T> domain, int m) {
 		if (m < 0) {
 			throw new IllegalArgumentException("negative sample size");
 		} else if (domain instanceof Domain.Small) {
 			Domain.Small<T> small = (Domain.Small<T>) domain;
-			int[] samples = generateApproximateSamples(small.size(), m);
+			long[] samples = generateApproximateSamples(small.size(), m);
 			return new AbstractSmallDomain.Sample<>(small, samples);
 		} else {
 			BigInteger[] samples = generateApproximateSamples(domain.bigSize(), m);
@@ -151,13 +152,13 @@ public class Domains {
 	 * @param m
 	 * @return
 	 */
-	private static int[] generateApproximateSamples(int n, int m) {
-		int k = n < m ? n : m;
+	private static long[] generateApproximateSamples(long n, int m) {
+		long k = n < m ? n : m;
 		// Guaranteed to be an integer
-		int[] samples = new int[k];
+		long[] samples = new long[(int) k];
 		// Do the fast sampling
 		for (int i = 0; i != m; ++i) {
-			samples[i] = random.nextInt(n);
+			samples[i] = random.nextLong(n);
 		}
 		// Done
 		return samples;
@@ -175,13 +176,13 @@ public class Domains {
 	 */
 	public static final Domain.Small<Boolean> BOOL = new AbstractSmallDomain<Boolean>() {
 		@Override
-		public int size() {
-			return 2;
+		public long size() {
+			return 2L;
 		}
 
 		@Override
-		public Boolean get(int index) {
-			return index == 0;
+		public Boolean get(long index) {
+			return index == 0L;
 		}
 	};
 
@@ -200,13 +201,13 @@ public class Domains {
 		} else {
 			return new AbstractSmallDomain<Integer>() {
 				@Override
-				public int size() {
+				public long size() {
 					return upper - lower + 1;
 				}
 
 				@Override
-				public Integer get(int index) {
-					return lower + index;
+				public Integer get(long index) {
+					return lower + (int) index;
 				}
 			};
 		}
@@ -220,25 +221,24 @@ public class Domains {
 	 *
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> Domain.Static<T[]> Array(int min, T[] element, Domain.Static<T> generator) {
-		final int max = element.length;
-		//
+	public static <T> Domain.Big<T[]> Array(int min, int max, Domain.Big<T> generator, T... dummy) {
 		if (min == max) {
-			return Array(element, generator);
+			return Array(max, generator, dummy);
 		} else {
-			Domain.Static<T[]>[] statics = new Domain.Static[max - min];
+			Domain.Big<T[]>[] statics = new Domain.Big[1 + max - min];
 			for (int i = 0; i != statics.length; ++i) {
-				statics[i] = Array(Arrays.copyOf(element, i + min), generator);
+				int size = i + min;
+				statics[i] = Array(size, generator, Arrays.copyOf(dummy, size));
 			}
 			return Domains.<T[]>Union(statics);
 		}
 	}
 
-	public static <T> Domain.Static<T[]> Array(T[] element, Domain.Static<T> generator) {
+	public static <T> Domain.Big<T[]> Array(int n, Domain.Big<T> generator, T...dummy) {
 		if (generator instanceof Domain.Small) {
 			Domain.Small<T> small = (Domain.Small<T>) generator;
-			if (AbstractSmallDomain.hasIntegerPower(small.size(), element.length)) {
-				return new AbstractSmallDomain.NarySequence<T[], T>(element, small) {
+			if (AbstractSmallDomain.hasIntegerPower(small.size(), n)) {
+				return new AbstractSmallDomain.NarySequence<T[], T>(n, small, dummy) {
 					@Override
 					public T[] generate(T[] element) {
 						// FIXME: can we avoid this somehow?
@@ -248,7 +248,7 @@ public class Domains {
 			}
 		}
 		// default to big domain
-		return new AbstractBigDomain.NarySequence<T[], T>(element, generator) {
+		return new AbstractBigDomain.NarySequence<T[], T>(n, generator, dummy) {
 			@Override
 			public T[] generate(T[] element) {
 				// FIXME: can we avoid this somehow?
@@ -266,10 +266,10 @@ public class Domains {
 	 * @param <T>
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> Domain.Static<T> Union(final Domain.Static<? extends T>... subdomains) {
+	public static <T> Domain.Big<T> Union(final Domain.Big<? extends T>... subdomains) {
 		if(subdomains.length == 1) {
 			// Easy case
-			return (Domain.Static<T>) subdomains[0];
+			return (Domain.Big<T>) subdomains[0];
 		}
 		Domain.Small[] smallDomains = toSmallDomains(subdomains);
 		if (smallDomains != null && AbstractSmallDomain.hasIntegerSum(smallDomains)) {
@@ -288,10 +288,10 @@ public class Domains {
 	 * @param <T>
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> Domain.Static<T> Union(final Domain.Small<? extends T>... subdomains) {
+	public static <T> Domain.Big<T> Union(final Domain.Small<? extends T>... subdomains) {
 		if (subdomains.length == 1) {
 			// Easy case
-			return (Domain.Static<T>) subdomains[0];
+			return (Domain.Big<T>) subdomains[0];
 		} else if (AbstractSmallDomain.hasIntegerSum(subdomains)) {
 			return new AbstractSmallDomain.NarySum<T>(subdomains);
 		} else {
@@ -314,14 +314,14 @@ public class Domains {
 	 * The supplied mapping function is responsible for turning a given combination
 	 * of elements from each domain into a single element in the resulting domain.
 	 */
-	public static <T, L, R> Domain.Static<T> Product(final Domain.Static<L> left, Domain.Static<R> right,
+	public static <T, L, R> Domain.Big<T> Product(final Domain.Big<L> left, Domain.Big<R> right,
 			BiFunction<L, R, T> mapping) {
 		// Attempt to construct a small domain for efficiency reasons.
 		if (left instanceof Domain.Small && right instanceof Domain.Small) {
 			Domain.Small<L> l = (Domain.Small<L>) left;
 			Domain.Small<R> r = (Domain.Small<R>) right;
 			// Both left and right are small, but is their combination still small?
-			if (AbstractSmallDomain.hasIntegerProduct(l.size(), r.size())) {
+			if (AbstractSmallDomain.hasIntegerProduct(l, r)) {
 				// Yes, it is!
 				return new AbstractSmallDomain.BinaryProduct<T, L, R>((Domain.Small<L>) left, (Domain.Small<R>) right) {
 
@@ -351,8 +351,30 @@ public class Domains {
 	 *               areas).
 	 * @return
 	 */
-	public static <T> Domain.Static<T[]> Product(final Domain.Static<? extends T>[] fields, T... dummy) {
-		throw new IllegalArgumentException("implement me");
+	@SuppressWarnings("unchecked")
+	@SafeVarargs
+	public static <T> Domain.Big<T[]> Product(final Domain.Big<? extends T>[] subdomains, T... dummy) {
+		Domain.Small[] smallDomains = toSmallDomains(subdomains);
+		if (smallDomains != null && AbstractSmallDomain.hasIntegerSum(smallDomains)) {
+			return new AbstractSmallDomain.NaryProduct<T[], T>(smallDomains, dummy) {
+
+				@Override
+				public T[] generate(T[] element) {
+
+					return Arrays.copyOf(element, element.length);
+				}
+
+			};
+		} else {
+			return new AbstractBigDomain.NaryProduct<T[], T>(subdomains, dummy) {
+
+				@Override
+				public T[] generate(T[] element) {
+					return Arrays.copyOf(element, element.length);
+				}
+
+			};
+		}
 	}
 
 	/**
@@ -366,21 +388,21 @@ public class Domains {
 	public static <T> Domain.Small<T> Finite(T... items) {
 		return new AbstractSmallDomain<T>() {
 			@Override
-			public int size() {
+			public long size() {
 				return items.length;
 			}
 
 			@Override
-			public T get(int index) {
+			public T get(long index) {
 				return items[(int) index];
 			}
 		};
 	}
 
-	private static Domain.Small[] toSmallDomains(Domain.Static... domains) {
+	private static Domain.Small[] toSmallDomains(Domain.Big... domains) {
 		Domain.Small[] smalls = new Domain.Small[domains.length];
 		for (int i = 0; i != domains.length; ++i) {
-			Domain.Static s = domains[i];
+			Domain.Big s = domains[i];
 			if (s instanceof Domain.Small) {
 				smalls[i] = (Domain.Small) s;
 			} else {
@@ -392,7 +414,7 @@ public class Domains {
 
 	public static void main(String[] args) {
 		long start = System.currentTimeMillis();
-		Domain.Static<Integer> is = Domains.Int(0, 5000);
+		Domain.Big<Integer> is = Domains.Int(0, 5000);
 		Domain.Small<Integer> s1 = Domains.Sample(is, 20);
 		long split = System.currentTimeMillis();
 		Domain.Small<Integer> s2 = Domains.FastApproximateSample(is, 20);
