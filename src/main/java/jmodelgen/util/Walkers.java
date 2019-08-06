@@ -7,7 +7,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import jmodelgen.core.BigDomain;
+import jmodelgen.core.Domain.Static;
 import jmodelgen.core.Domain;
 import jmodelgen.core.Walker;
 
@@ -20,7 +20,7 @@ public class Walkers {
 	 * @param domain
 	 * @return
 	 */
-	public static <T> Walker<T> Adaptor(Domain<T> domain) {
+	public static <T> Walker<T> Adaptor(Domain.Small<T> domain) {
 		return new AbstractWalker<T>() {
 			private int index = 0;
 			@Override
@@ -53,7 +53,7 @@ public class Walkers {
 	 * @param domain
 	 * @return
 	 */
-	public static <T> Walker<T> Adaptor(BigDomain<T> domain) {
+	public static <T> Walker<T> Adaptor(Domain.Static<T> domain) {
 		return new AbstractWalker<T>() {
 			private BigInteger index = BigInteger.ZERO;
 			@Override
@@ -89,8 +89,8 @@ public class Walkers {
 	 * @param mapping
 	 * @return
 	 */
-	public static <T, S> Walker<T> Adaptor(BigDomain<S> domain, Function<S, T> mapping) {
-		return Adaptor(new AbstractBigDomain.Unary<T, S>(domain) {
+	public static <T, S> Walker<T> Adaptor(Domain.Static<S> domain, Function<S, T> mapping) {
+		return Adaptor(new AbstractBigDomain.Adaptor<T, S>(domain) {
 
 			@Override
 			public T get(S s) {
@@ -111,7 +111,7 @@ public class Walkers {
 		};
 	}
 
-	public static <T, L, R> Walker<T> Product(BigDomain<L> left, BigDomain<R> right, BiFunction<L, R, T> mapping) {
+	public static <T, L, R> Walker<T> Product(Domain.Static<L> left, Domain.Static<R> right, BiFunction<L, R, T> mapping) {
 		return new AbstractWalker.Binary<T, L, R>(Adaptor(left), Adaptor(right)) {
 
 			@Override
@@ -121,7 +121,7 @@ public class Walkers {
 		};
 	}
 
-	public static <T, L, R> Walker<T> Product(Domain<L> left, Walker<R> right, BiFunction<L, R, T> mapping) {
+	public static <T, L, R> Walker<T> Product(Domain.Small<L> left, Walker<R> right, BiFunction<L, R, T> mapping) {
 		return new AbstractWalker.Binary<T, L, R>(Adaptor(left), right) {
 
 			@Override
