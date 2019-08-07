@@ -22,10 +22,12 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 	@Override
 	public Iterator<T> iterator() {
 		return new Iterator<T>() {
-			private int index = 0;
+			private final long size = size();
+			private long index = 0;
+
 			@Override
 			public boolean hasNext() {
-				return index < size();
+				return index < size;
 			}
 
 			@Override
@@ -356,7 +358,7 @@ public abstract class AbstractSmallDomain<T> extends AbstractDomain<T> implement
 					throw new IllegalArgumentException("invalid integer product");
 				}
 			}
-			return (int) size;
+			return size;
 		} else {
 			return 0;
 		}
