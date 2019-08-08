@@ -12,11 +12,12 @@ public abstract class AbstractBigDomain<T> extends AbstractDomain<T> implements 
 	@Override
 	public Iterator<T> iterator() {
 		return new Iterator<T>() {
+			private final BigInteger bigSize = bigSize();
 			private BigInteger index = BigInteger.ZERO;
 
 			@Override
 			public boolean hasNext() {
-				return index.compareTo(bigSize()) < 0;
+				return index.compareTo(bigSize) < 0;
 			}
 
 			@Override

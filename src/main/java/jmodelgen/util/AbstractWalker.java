@@ -193,21 +193,39 @@ public abstract class AbstractWalker<T> implements Walker<T> {
 
 		@Override
 		public void next() {
-			for (int i = 0; i != size; ++i) {
-				Walker<S> walker = walkers[i];
+			// Increment walker
+			int index = size - 1;
+			// Move leftwards invalidating completed walkers
+			while(index >= 0) {
+				// Get next walker
+				Walker<S> walker = walkers[index];
+				// Move walker
 				walker.next();
+				// Check if has reset
 				if (walker.finished()) {
-					walker.reset();
+					// Destroy walker
+					walkers[index] = null;
+					// and transfer state
+					state[index + 1] = null;
 				} else {
-					return;
+					// Update transfer state
+					state[index + 1] = state[index].transfer(walker.get());
+					// done
+					break;
 				}
+				// Continue down
+				index = index - 1;
 			}
-			// lazily create walker
-			if(size < walkers.length) {
-				walkers[size] = state[size].construct();
-				state[size + 1] = state[size].transfer(walkers[size].get());
+			// Increase number of walkers (if appropriate)
+			if(index < 0) {
+				size = size + 1;
 			}
-			size = size + 1;
+			// Reconstruct walkers as necessary
+			for (int i = index + 1; i < Math.min(walkers.length, size); i++) {
+				Walker<S> ith = state[i].construct();
+				walkers[i] = ith;
+				state[i+1] = state[i].transfer(ith.get());
+			}
 		}
 
 		abstract public T get(List<S> items);
@@ -218,6 +236,19 @@ public abstract class AbstractWalker<T> implements Walker<T> {
 				walkers[i] = state[i].construct();
 				state[i+1] = state[i].transfer(walkers[i].get());
 			}
+		}
+
+		@Override
+		public String toString() {
+			String r = "[" + state[0] + "]";
+			for(int i=0;i!=walkers.length;++i) {
+				if(walkers[i] != null) {
+					r += "[" + walkers[i].get() + ";" + state[i+1] + "]";
+				} else {
+					r += "[]";
+				}
+			}
+			return r;
 		}
 	}
 
