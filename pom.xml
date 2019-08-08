@@ -7,7 +7,7 @@
   
   <groupId>org.whiley</groupId>
   <artifactId>jmodelgen</artifactId>
-  <version>0.4.0</version>
+  <version>0.4.1</version>
   <packaging>jar</packaging>
   
   <licenses>
