@@ -208,6 +208,8 @@ public abstract class AbstractWalker<T> implements Walker<T> {
 					// and transfer state
 					state[index + 1] = null;
 				} else {
+					// Update transfer state
+					state[index + 1] = state[index].transfer(walker.get());
 					// done
 					break;
 				}
@@ -215,11 +217,11 @@ public abstract class AbstractWalker<T> implements Walker<T> {
 				index = index - 1;
 			}
 			// Increase number of walkers (if appropriate)
-			if(index < 0 && size < walkers.length) {
+			if(index < 0) {
 				size = size + 1;
 			}
 			// Reconstruct walkers as necessary
-			for (int i = index + 1; i < size; i++) {
+			for (int i = index + 1; i < Math.min(walkers.length, size); i++) {
 				Walker<S> ith = state[i].construct();
 				walkers[i] = ith;
 				state[i+1] = state[i].transfer(ith.get());
@@ -234,6 +236,19 @@ public abstract class AbstractWalker<T> implements Walker<T> {
 				walkers[i] = state[i].construct();
 				state[i+1] = state[i].transfer(walkers[i].get());
 			}
+		}
+
+		@Override
+		public String toString() {
+			String r = "[" + state[0] + "]";
+			for(int i=0;i!=walkers.length;++i) {
+				if(walkers[i] != null) {
+					r += "[" + walkers[i].get() + ";" + state[i+1] + "]";
+				} else {
+					r += "[]";
+				}
+			}
+			return r;
 		}
 	}
 
