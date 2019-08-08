@@ -22,10 +22,8 @@ public abstract class AbstractBigDomain<T> extends AbstractDomain<T> implements 
 
 			@Override
 			public T next() {
-				System.out.print("[" + index + "/" + bigSize);
 				T r = get(index);
 				index = index.add(BigInteger.ONE);
-				System.out.println("]");
 				return r;
 			}
 		};
