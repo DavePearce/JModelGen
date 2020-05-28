@@ -39,11 +39,15 @@ public class Walkers {
 			}
 
 			@Override
-			public long advance(long i) {
-				long max = domain.size() - index;
-				max = Math.min(i, max);
-				index += max;
-				return max;
+			public long advance(long n) {
+				long m = domain.size() - index;
+				if(n > m) {
+					index = index + m;
+					return m;
+				} else {
+					index = index + n;
+					return n;
+				}
 			}
 
 			@Override
@@ -87,15 +91,15 @@ public class Walkers {
 				if(m.bitLength() <= 63) {
 					// Could fail
 					long max = m.longValueExact();
-					max = Math.min(i, max);
-					index = index.add(BigInteger.valueOf(max));
-					return max;
-				} else {
-					// Cannot fail
-					index = index.add(BigInteger.valueOf(i));
-					//
-					return i;
+					if(i >= max) {
+						index = index.add(m);
+						return max;
+					}
 				}
+				// Cannot fail
+				index = index.add(BigInteger.valueOf(i));
+				//
+				return i;
 			}
 
 

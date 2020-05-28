@@ -102,13 +102,15 @@ public abstract class AbstractWalker<T> implements Walker<T> {
 
 		@Override
 		public long advance(long n) {
-			long m = left.advance(n);
-			if(m != n) {
-				// left exhausted
-				left.reset();
-				m += right.advance(n-m);
+			long m = n;
+			while(n > 0 && !right.finished()) {
+				n = n - left.advance(n);
+				if(left.finished()) {
+					left.reset();
+					right.next();
+				}
 			}
-			return m;
+			return m - n;
 		}
 
 		public abstract T get(L left, R right);
@@ -149,7 +151,7 @@ public abstract class AbstractWalker<T> implements Walker<T> {
 
 		@Override
 		public void next() {
-			for (int i = 0; i != size; ++i) {
+			for (int i = 0; i < size; ++i) {
 				Walker<S> walker = walkers[i];
 				walker.next();
 				if (walker.finished()) {
@@ -163,28 +165,31 @@ public abstract class AbstractWalker<T> implements Walker<T> {
 
 		@Override
 		public long advance(long n) {
-			final long m = n;
-			for (int i = 0; i != size; ++i) {
-				Walker<S> walker = walkers[i];
-				n = n - walker.advance(n);
-				if (walker.finished()) {
-					walker.reset();
-				} else {
-					return m;
-				}
-			}
-			size = size + 1;
-			//
-			// Decide whether to do more or not
 			if(n == 0) {
-				// Have advanced as requested
-				return m;
-			} else if(size > walkers.length) {
-				// Have run out of things to advance through
-				return m - n;
+				return 0;
+			} else if(size == 0) {
+				size = size + 1;
+				return 1 + advance(n - 1);
 			} else {
-				// Haven't finished advancing yet!
-				return (m - n) + advance(n);
+				Walker<S> walker = walkers[0];
+				long m = walker.advance(n);
+				// Propagate carry
+				if(walker.finished()) {
+					walker.reset();
+					for (int i = 1; i < size; ++i) {
+						walker = walkers[i];
+						walker.next();
+						if (walker.finished()) {
+							walker.reset();
+						} else {
+							return m + advance(n - m);
+						}
+					}
+					size = size + 1;
+					return m + advance(n - m);
+				}
+				// Done
+				return m;
 			}
 		}
 
@@ -379,21 +384,19 @@ public abstract class AbstractWalker<T> implements Walker<T> {
 
 		@Override
 		public long advance(long n) {
-			long m = 0;
+			final long m = n;
 			while(index < walkers.length) {
 				Walker<T> w = walkers[index];
-				long d = w.advance(n);
-				if(d == n) {
+				n = n - w.advance(n);
+				if(n == 0) {
 					// Look for next usable walker
 					index = next(index,walkers);
 					// Done
 					return m;
 				}
-				m = m + d;
-				n = n - d;
 				index = index + 1;
 			}
-			return m;
+			return m - n;
 		}
 
 		private static <T> int next(int index, Walker<T>[] walkers) {
