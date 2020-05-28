@@ -241,8 +241,46 @@ public abstract class AbstractWalker<T> implements Walker<T> {
 
 		@Override
 		public void next() {
-			// Increment walker
-			int index = size - 1;
+			int index = propagateCarry(size-1);
+			reconstruct(index);
+		}
+
+		@Override
+		public long advance(long n) {
+			if (n == 0) {
+				return 0;
+			} else if (size == 0) {
+				size = size + 1;
+				reconstruct(-1);
+				return 1 + advance(n - 1);
+			} else {
+				int index = size - 1;
+				Walker<S> walker = walkers[index];
+				long m = walker.advance(n);
+				// Propagate carry
+				if (walker.finished()) {
+					// Destroy walker
+					walkers[index] = null;
+					// and transfer state
+					state[index + 1] = null;
+					// Propagate up chain
+					index = propagateCarry(index - 1);
+					//
+					reconstruct(index);
+					// Continue traversal
+					return advance(n - m);
+				} else {
+					// Update transfer state
+					state[index + 1] = state[index].transfer(walker.get());
+					// Done
+					return m;
+				}
+			}
+		}
+
+		abstract public T get(List<S> items);
+
+		private final int propagateCarry(int index) {
 			// Move leftwards invalidating completed walkers
 			while(index >= 0) {
 				// Get next walker
@@ -268,6 +306,10 @@ public abstract class AbstractWalker<T> implements Walker<T> {
 			if(index < 0) {
 				size = size + 1;
 			}
+			return index;
+		}
+
+		private final void reconstruct(int index) {
 			// Reconstruct walkers as necessary
 			for (int i = index + 1; i < Math.min(walkers.length, size); i++) {
 				Walker<S> ith = state[i].construct();
@@ -275,57 +317,6 @@ public abstract class AbstractWalker<T> implements Walker<T> {
 				state[i+1] = state[i].transfer(ith.get());
 			}
 		}
-
-		@Override
-		public long advance(long n) {
-			final long m = n;
-			// Increment walker
-			int index = size - 1;
-			// Move leftwards invalidating completed walkers
-			while(index >= 0) {
-				// Get next walker
-				Walker<S> walker = walkers[index];
-				// Move walker
-				n = n - walker.advance(n);
-				// Check if has reset
-				if (walker.finished()) {
-					// Destroy walker
-					walkers[index] = null;
-					// and transfer state
-					state[index + 1] = null;
-				} else {
-					// Update transfer state
-					state[index + 1] = state[index].transfer(walker.get());
-					// done
-					break;
-				}
-				// Continue down
-				index = index - 1;
-			}
-			// Increase number of walkers (if appropriate)
-			if(index < 0) {
-				size = size + 1;
-			}
-			// Reconstruct walkers as necessary
-			for (int i = index + 1; i < Math.min(walkers.length, size); i++) {
-				Walker<S> ith = state[i].construct();
-				walkers[i] = ith;
-				state[i+1] = state[i].transfer(ith.get());
-			}
-			// Decide whether to do more or not
-			if(n == 0) {
-				// Have successfully advanced as requested
-				return m;
-			} else if(size > walkers.length) {
-				// Have run out of things to advance through
-				return m - n;
-			} else {
-				// Haven't finished advancing yet!
-				return (m - n) + advance(n);
-			}
-		}
-
-		abstract public T get(List<S> items);
 
 		private void initialise(int min, State<S> seed) {
 			state[0] = seed;
