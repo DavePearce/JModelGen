@@ -22,7 +22,7 @@ public class Walkers {
 	 */
 	public static <T> Walker<T> Adaptor(Domain.Small<T> domain) {
 		return new AbstractWalker<T>() {
-			private int index = 0;
+			private long index = 0;
 			@Override
 			public void reset() {
 				index = 0;
@@ -36,6 +36,14 @@ public class Walkers {
 			@Override
 			public void next() {
 				index = index + 1;
+			}
+
+			@Override
+			public long advance(long i) {
+				long max = domain.size() - index;
+				max = Math.min(i, max);
+				index += max;
+				return max;
 			}
 
 			@Override
@@ -70,6 +78,26 @@ public class Walkers {
 			public void next() {
 				index = index.add(BigInteger.ONE);
 			}
+
+			@Override
+			public long advance(long i) {
+				// Calculate maximum step
+				BigInteger m = domain.bigSize().subtract(index);
+				// Check whether could fail
+				if(m.bitLength() <= 63) {
+					// Could fail
+					long max = m.longValueExact();
+					max = Math.min(i, max);
+					index = index.add(BigInteger.valueOf(max));
+					return max;
+				} else {
+					// Cannot fail
+					index = index.add(BigInteger.valueOf(i));
+					//
+					return i;
+				}
+			}
+
 
 			@Override
 			public T get() {

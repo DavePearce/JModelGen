@@ -11,6 +11,8 @@ public interface Walker<T> extends Iterable<T> {
 
 	public void next();
 
+	public long advance(long n);
+
 	@Override
 	public Iterator<T> iterator();
 
