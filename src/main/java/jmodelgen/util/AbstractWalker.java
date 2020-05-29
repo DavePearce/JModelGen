@@ -247,16 +247,47 @@ public abstract class AbstractWalker<T> implements Walker<T> {
 
 		@Override
 		public long advance(long n) {
-			if (n < 0 || size > walkers.length) {
-				return 0;
-			} else if (size == 0) {
+//			if (n <= 0 || size > walkers.length) {
+//				return 0;
+//			} else if (size == 0) {
+//				size = size + 1;
+//				reconstruct(-1);
+//				return 1 + advance(n - 1);
+//			} else {
+//				int index = size - 1;
+//				Walker<S> walker = walkers[index];
+//				long m = walker.advance(n);
+//				// Propagate carry
+//				if (walker.finished()) {
+//					// Destroy walker
+//					walkers[index] = null;
+//					// and transfer state
+//					state[index + 1] = null;
+//					// Propagate up chain
+//					index = propagateCarry(index - 1);
+//					//
+//					reconstruct(index);
+//					// Continue traversal
+//					return m + advance(n - m);
+//				} else {
+//					// Update transfer state
+//					state[index + 1] = state[index].transfer(walker.get());
+//					// Done
+//					return m;
+//				}
+//			}
+			long m = n;
+			// Handle empty case
+			if (n > 0 && size == 0) {
 				size = size + 1;
 				reconstruct(-1);
-				return 1 + advance(n - 1);
-			} else {
+				n = n - 1;
+			}
+			//
+			while(n > 0 && size <= walkers.length) {
 				int index = size - 1;
 				Walker<S> walker = walkers[index];
-				long m = walker.advance(n);
+				n = n - walker.advance(n);
 				// Propagate carry
 				if (walker.finished()) {
 					// Destroy walker
@@ -265,10 +296,9 @@ public abstract class AbstractWalker<T> implements Walker<T> {
 					state[index + 1] = null;
 					// Propagate up chain
 					index = propagateCarry(index - 1);
-					//
+					// Reconstruct states
 					reconstruct(index);
 					// Continue traversal
-					return m + advance(n - m);
 				} else {
 					// Update transfer state
 					state[index + 1] = state[index].transfer(walker.get());
@@ -276,6 +306,8 @@ public abstract class AbstractWalker<T> implements Walker<T> {
 					return m;
 				}
 			}
+			//
+			return m - n;
 		}
 
 		abstract public T get(List<S> items);
